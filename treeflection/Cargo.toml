@@ -1,0 +1,10 @@
+[package]
+name = "treeflection"
+version = "0.1.0"
+authors = ["Rukai <rubickent@gmail.com>"]
+description = "A library that provides reflection for tree structures"
+license = "MIT"
+repository = "https://github.com/rukai/treeflection"
+keywords = ["reflection", "tree", "treeflection"]
+
+[dependencies]

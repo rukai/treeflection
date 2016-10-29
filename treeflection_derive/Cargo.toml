@@ -1,0 +1,6 @@
+[package]
+name = "treeflection_derive"
+version = "0.1.0"
+authors = ["Rukai <rubickent@gmail.com>"]
+
+[dependencies]
