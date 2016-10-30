@@ -18,20 +18,6 @@ impl<U> Node for Vec<U> where U: Node {
     }
 }
 
-macro_rules! int_node {
-    ($e:ty) => {
-        impl Node for $e {
-            fn node_step(&mut self, mut runner: NodeRunner) -> String {
-                match runner.step() {
-                    NodeToken::Get         => { (*self).to_string() }
-                    NodeToken::Set (value) => { *self = value.parse().unwrap(); String::from("") }
-                    action                 => { format!("usize cannot '{:?}'", action) }
-                }
-            }
-        }
-    }
-}
-
 impl Node for bool {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
@@ -52,6 +38,20 @@ impl Node for String {
     }
 }
 
+macro_rules! int_node {
+    ($e:ty) => {
+        impl Node for $e {
+            fn node_step(&mut self, mut runner: NodeRunner) -> String {
+                match runner.step() {
+                    NodeToken::Get         => { (*self).to_string() }
+                    NodeToken::Set (value) => { *self = value.parse().unwrap(); String::from("") }
+                    action                 => { format!("usize cannot '{:?}'", action) }
+                }
+            }
+        }
+    }
+}
+
 int_node!(i64);
 int_node!(u64);
 int_node!(i32);
@@ -64,10 +64,12 @@ int_node!(isize);
 int_node!(usize);
 
 pub struct NodeRunner {
-    tokens: Vec<NodeToken>
+    pub tokens: Vec<NodeToken>
 }
 
 impl NodeRunner {
+    // TODO: Currently the command must begin with a ChainProperty.
+    // However there is no reason this has to be the case.
     pub fn new(command: &str) -> Result<NodeRunner, String> {
         // add first identifier to token as property
         // get next identifier, could be:
@@ -188,7 +190,7 @@ pub enum NodeTokenProgress {
     Action
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum NodeToken {
     ChainProperty (String),
     ChainIndex (usize),
