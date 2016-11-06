@@ -1,10 +1,8 @@
 [package]
-name = "treeflection_derive"
+name = "treeflection_derive_tests"
 version = "0.1.0"
 authors = ["Rukai <rubickent@gmail.com>"]
 
-[lib]
-proc-macro = true
-
-[dev-dependencies]
+[dependencies]
 treeflection = { path = "../treeflection" }
+treeflection_derive = { path = "../treeflection_derive" }
