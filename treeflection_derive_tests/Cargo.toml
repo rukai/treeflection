@@ -3,6 +3,10 @@ name = "treeflection_derive_tests"
 version = "0.1.0"
 authors = ["Rukai <rubickent@gmail.com>"]
 
-[dependencies]
+[dev-dependencies]
 treeflection = { path = "../treeflection" }
 treeflection_derive = { path = "../treeflection_derive" }
+
+[[test]]
+name = "test"
+path = "test.rs"

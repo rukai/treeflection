@@ -18,53 +18,72 @@ struct Parent {
     child: Child,
 }
 
+impl Parent {
+    fn new() -> Parent {
+        Parent {
+            foo: String::from("hiya"),
+            bar: 42,
+            baz: true,
+            child: Child {
+                qux: -13,
+            },
+        }
+    }
+}
+
 #[derive(Node)]
 struct Child {
     qux: i32,
 }
 
 #[test]
-fn test() {
-    let mut parent = Parent {
-        foo: String::from("hiya"),
-        bar: 42,
-        baz: true,
-        child: Child {
-            qux: -13,
-        },
-    };
-
+fn get() {
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!(parent.node_step(runner), String::from("This is a struct"));
+    assert_eq!(Parent::new().node_step(runner), String::from("This is a struct"));
+}
 
+#[test]
+fn no_property() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("notfoo")),
     )};
-    assert_eq!(parent.node_step(runner), String::from("Package does not have a property 'notfoo'"));
+    assert_eq!(Parent::new().node_step(runner), String::from("Package does not have a property 'notfoo'"));
+}
 
+#[test]
+fn string_property() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("foo")),
     )};
-    assert_eq!(parent.node_step(runner), String::from("hiya"));
+    assert_eq!(Parent::new().node_step(runner), String::from("hiya"));
+}
 
+#[test]
+fn uint_property() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("bar")),
     )};
-    assert_eq!(parent.node_step(runner), String::from("42"));
+    assert_eq!(Parent::new().node_step(runner), String::from("42"));
+}
 
+#[test]
+fn bool_property() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("baz")),
     )};
-    assert_eq!(parent.node_step(runner), String::from("true"));
+    assert_eq!(Parent::new().node_step(runner), String::from("true"));
+}
 
+#[test]
+fn int_child_property() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("qux")),
         NodeToken::ChainProperty(String::from("child")),
     )};
-    assert_eq!(parent.node_step(runner), "-13");
+    assert_eq!(Parent::new().node_step(runner), "-13");
 }

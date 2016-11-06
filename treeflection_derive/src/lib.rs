@@ -52,7 +52,7 @@ fn gen_match_property(data: &VariantData) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for field in data.fields() {
         let name = &field.ident.as_ref().unwrap();
-        let name_string = format!("{}", name);
+        let name_string = name.to_string();
 
         arms.push(quote!{
             #name_string => { self.#name.node_step(runner) }
