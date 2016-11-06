@@ -9,11 +9,11 @@ impl<U> Node for Vec<U> where U: Node {
                 let length = self.len();
                 match self.get_mut(index) {
                     Some (item) => item.node_step(runner),
-                    None      => return format!("Used index {} on a list of size {} (try a value between 0-{}", index, length, length)
+                    None      => return format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
                 }
             },
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) }
-            action => { format!("List cannot '{:?}'", action) }
+            action => { format!("vector cannot '{:?}'", action) }
         }
     }
 }
@@ -45,7 +45,7 @@ macro_rules! int_node {
                 match runner.step() {
                     NodeToken::Get         => { (*self).to_string() }
                     NodeToken::Set (value) => { *self = value.parse().unwrap(); String::from("") }
-                    action                 => { format!("usize cannot '{:?}'", action) }
+                    action                 => { format!("{} cannot '{:?}'", stringify! { $e }, action) }
                 }
             }
         }
@@ -62,6 +62,8 @@ int_node!(i8);
 int_node!(u8);
 int_node!(isize);
 int_node!(usize);
+int_node!(f32);
+int_node!(f64);
 
 pub struct NodeRunner {
     pub tokens: Vec<NodeToken>
