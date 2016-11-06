@@ -8,19 +8,63 @@ extern crate treeflection;
 #[macro_use]
 extern crate treeflection_derive;
 
-use treeflection::{Node, NodeRunner};
+use treeflection::{Node, NodeRunner, NodeToken};
 
 #[derive(Node)]
-struct Foo {
+struct Parent {
+    foo: String,
     bar: u32,
     baz: bool,
+    child: Child,
+}
+
+#[derive(Node)]
+struct Child {
+    qux: i32,
 }
 
 #[test]
 fn test() {
-    let mut foo = Foo { bar: 0, baz: true};
+    let mut parent = Parent {
+        foo: String::from("hiya"),
+        bar: 42,
+        baz: true,
+        child: Child {
+            qux: -13,
+        },
+    };
 
-    let runner = NodeRunner::new("foo get").unwrap();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
+    assert_eq!(parent.node_step(runner), String::from("This is a struct"));
 
-    assert_eq!(foo.node_step(runner), String::from("lel"));
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("notfoo")),
+    )};
+    assert_eq!(parent.node_step(runner), String::from("Package does not have a property 'notfoo'"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("foo")),
+    )};
+    assert_eq!(parent.node_step(runner), String::from("hiya"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("bar")),
+    )};
+    assert_eq!(parent.node_step(runner), String::from("42"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("baz")),
+    )};
+    assert_eq!(parent.node_step(runner), String::from("true"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("qux")),
+        NodeToken::ChainProperty(String::from("child")),
+    )};
+    assert_eq!(parent.node_step(runner), "-13");
 }
