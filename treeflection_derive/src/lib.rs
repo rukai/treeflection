@@ -7,7 +7,7 @@ extern crate quote;
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-use syn::{Body, Ident, Variant, VariantData};
+use syn::{Body, Ident, Variant, VariantData, Visibility};
 use quote::Tokens;
 
 #[proc_macro_derive(Node)]
@@ -29,7 +29,8 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
 }
 
 fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
-    let match_property = gen_match_property(data);
+    let name_string = name.to_string();
+    let match_property = gen_match_property(&name_string, data);
 
     quote! {
         impl Node for #name {
@@ -41,28 +42,29 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
                     NodeToken::Get => {
                         format!("This is a {}", "struct")
                     }
-                    action => { format!("Package cannot '{:?}'", action) }
+                    action => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
             }
         }
     }
 }
 
-fn gen_match_property(data: &VariantData) -> Tokens {
+fn gen_match_property(name: &str, data: &VariantData) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for field in data.fields() {
-        let name = &field.ident.as_ref().unwrap();
-        let name_string = name.to_string();
-
-        arms.push(quote!{
-            #name_string => { self.#name.node_step(runner) }
-        });
+        let field_name = &field.ident.as_ref().unwrap();
+        let field_name_string = field_name.to_string();
+        if let Visibility::Public = field.vis {
+            arms.push(quote!{
+                #field_name_string => { self.#field_name.node_step(runner) }
+            });
+        }
     }
 
     quote! {
         match property.as_str() {
             #( #arms ),*,
-            prop  => format!("Package does not have a property '{}'", prop)
+            prop  => format!("{} does not have a property '{}'", #name, prop)
         }
     }
 }

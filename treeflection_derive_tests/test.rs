@@ -11,10 +11,16 @@ use treeflection::{Node, NodeRunner, NodeToken};
 
 #[derive(Node)]
 struct Parent {
-    foo: String,
-    bar: u32,
-    baz: bool,
-    child: Child,
+    pub foo: String,
+    pub bar: u32,
+    pub baz: bool,
+    pub child: Child,
+    private: i64,
+}
+
+#[derive(Node)]
+struct Child {
+    pub qux: i32,
 }
 
 impl Parent {
@@ -26,13 +32,9 @@ impl Parent {
             child: Child {
                 qux: -13,
             },
+            private: 1337,
         }
     }
-}
-
-#[derive(Node)]
-struct Child {
-    qux: i32,
 }
 
 #[test]
@@ -42,12 +44,27 @@ fn get() {
 }
 
 #[test]
+fn copy() {
+    let runner = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    assert_eq!(Parent::new().node_step(runner), String::from("Parent cannot 'CopyFrom'"));
+}
+
+#[test]
 fn no_property() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("notfoo")),
     )};
-    assert_eq!(Parent::new().node_step(runner), String::from("Package does not have a property 'notfoo'"));
+    assert_eq!(Parent::new().node_step(runner), String::from("Parent does not have a property 'notfoo'"));
+}
+
+#[test]
+fn private_property() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("private")),
+    )};
+    assert_eq!(Parent::new().node_step(runner), String::from("Parent does not have a property 'private'"));
 }
 
 #[test]
