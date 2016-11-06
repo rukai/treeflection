@@ -5,8 +5,7 @@
 #![feature(proc_macro)]
 
 extern crate treeflection;
-#[macro_use]
-extern crate treeflection_derive;
+#[macro_use] extern crate treeflection_derive;
 
 use treeflection::{Node, NodeRunner, NodeToken};
 
