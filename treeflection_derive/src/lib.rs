@@ -25,12 +25,63 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
 }
 
 fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
-    quote! { }
+    let match_get = gen_enum_get(name, data);
+    let match_set = gen_enum_set(name, data);
+    let name_string = name.to_string();
+    quote! {
+        impl Node for #name {
+            fn node_step(&mut self, mut runner: NodeRunner) -> String {
+                match runner.step() {
+                    NodeToken::Get => {
+                        #match_get
+                    }
+                    NodeToken::Set (value) => {
+                        #match_set
+                    }
+                    action => { format!("{} cannot '{:?}'", #name_string, action) }
+                }
+            }
+        }
+    }
+}
+
+fn gen_enum_get(enum_name: &Ident, data: &Vec<Variant>) -> Tokens {
+    let mut match_arms: Vec<Tokens> = vec!();
+    for variant in data {
+        let name = &variant.ident;
+        let name_string = name.to_string();
+        match_arms.push(quote! {
+            &mut #enum_name::#name => String::from(#name_string),
+        });
+    }
+    quote! {
+        match self {
+            #( #match_arms )*
+        }
+    }
+}
+
+fn gen_enum_set(enum_name: &Ident, data: &Vec<Variant>) -> Tokens {
+    let enum_name_string = enum_name.to_string();
+    let mut match_arms: Vec<Tokens> = vec!();
+    for variant in data {
+        let name = &variant.ident;
+        let name_string = name.to_string();
+        match_arms.push(quote! {
+            #name_string => { *self = #enum_name::#name; String::from("") },
+        });
+    }
+    quote! {
+        match value.as_ref() {
+            #( #match_arms )*
+            value_miss => { format!("{} is not a valid value for {}", value_miss, #enum_name_string) }
+        }
+    }
 }
 
 fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
     let name_string = name.to_string();
-    let match_property = gen_match_property(&name_string, data);
+    let match_property = gen_struct_chain_property(&name_string, data);
 
     quote! {
         impl Node for #name {
@@ -49,21 +100,21 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
     }
 }
 
-fn gen_match_property(name: &str, data: &VariantData) -> Tokens {
+fn gen_struct_chain_property(name: &str, data: &VariantData) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for field in data.fields() {
         let field_name = &field.ident.as_ref().unwrap();
         let field_name_string = field_name.to_string();
         if let Visibility::Public = field.vis {
             arms.push(quote!{
-                #field_name_string => { self.#field_name.node_step(runner) }
+                #field_name_string => { self.#field_name.node_step(runner) },
             });
         }
     }
 
     quote! {
         match property.as_str() {
-            #( #arms ),*,
+            #( #arms )*
             prop  => format!("{} does not have a property '{}'", #name, prop)
         }
     }
