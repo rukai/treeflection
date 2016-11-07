@@ -6,6 +6,7 @@
 
 extern crate treeflection;
 #[macro_use] extern crate treeflection_derive;
+#[macro_use] extern crate matches;
 
 use treeflection::{Node, NodeRunner, NodeToken};
 
@@ -38,13 +39,13 @@ impl Parent {
 }
 
 #[test]
-fn get() {
+fn get_struct() {
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
     assert_eq!(Parent::new().node_step(runner), String::from("This is a struct"));
 }
 
 #[test]
-fn copy() {
+fn copy_struct() {
     let runner = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
     assert_eq!(Parent::new().node_step(runner), String::from("Parent cannot 'CopyFrom'"));
 }
@@ -102,4 +103,83 @@ fn int_child_property() {
         NodeToken::ChainProperty(String::from("child")),
     )};
     assert_eq!(Parent::new().node_step(runner), "-13");
+}
+
+#[derive(Node)]
+enum SomeEnum {
+    Foo,
+    Bar,
+    //Baz {x: f32, y: f32},
+    //Qux (u8),
+}
+
+//impl Node for SomeEnum {
+//    fn node_step ( & mut self , mut runner : NodeRunner ) -> String {
+//        match runner . step ( ) {
+//            NodeToken :: Get => {
+//                match self {
+//                    &mut SomeEnum :: Foo => String::from("Foo") ,
+//                    &mut SomeEnum :: Bar => String::from("Bar") ,
+//                }
+//            }
+//            NodeToken :: Set ( value ) => {
+//                match value.as_ref() {
+//                    "Foo" => { *self = SomeEnum :: Foo; String::from("") } ,
+//                    "Bar" => { *self = SomeEnum :: Bar; String::from("") } ,
+//                    value_miss => { format!("{} is not a valid value for {}", value_miss, "SomeEnum") },
+//                }
+//            }
+//            action => { format ! ( "{} cannot '{:?}'" , "SomeEnum" , action ) }
+//        }
+//    }
+//}
+
+#[test]
+fn get_enum() {
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get
+    )};
+    assert_eq!(some_enum.node_step(runner), "Foo");
+
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get
+    )};
+    assert_eq!(some_enum.node_step(runner), "Bar");
+}
+
+#[test]
+fn set_enum() {
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Foo")) )};
+    some_enum.node_step(runner);
+    assert!(matches!(some_enum, SomeEnum::Foo));
+
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Bar")) )};
+    some_enum.node_step(runner);
+    assert!(matches!(some_enum, SomeEnum::Bar));
+
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Bar")) )};
+    some_enum.node_step(runner);
+    assert!(matches!(some_enum, SomeEnum::Bar));
+
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Foo")) )};
+    some_enum.node_step(runner);
+    assert!(matches!(some_enum, SomeEnum::Foo));
+
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Aether")) )};
+    assert_eq!(some_enum.node_step(runner), "Aether is not a valid value for SomeEnum");
+    assert!(matches!(some_enum, SomeEnum::Foo));
+}
+
+#[test]
+fn copy_enum() {
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    assert_eq!(some_enum.node_step(runner), String::from("SomeEnum cannot 'CopyFrom'"));
 }

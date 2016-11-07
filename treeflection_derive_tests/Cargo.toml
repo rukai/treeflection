@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Rukai <rubickent@gmail.com>"]
 
 [dev-dependencies]
+matches = "0.1.4"
 treeflection = { path = "../treeflection" }
 treeflection_derive = { path = "../treeflection_derive" }
 
