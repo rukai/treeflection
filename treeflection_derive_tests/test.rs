@@ -110,7 +110,8 @@ enum SomeEnum {
     Foo,
     Bar,
     //Baz {x: f32, y: f32},
-    //Qux (u8),
+    Qux (u8),
+    Quux (i64, String, bool),
 }
 
 //impl Node for SomeEnum {
@@ -120,6 +121,8 @@ enum SomeEnum {
 //                match self {
 //                    &mut SomeEnum :: Foo => String::from("Foo") ,
 //                    &mut SomeEnum :: Bar => String::from("Bar") ,
+//                    &mut SomeEnum :: Qux(ref v1) => format!("Qux({})", v1) ,
+//                    &mut SomeEnum :: Quux(ref v1, ref v2, ref v3) => format!("Quux({}, {}, {})", v1, v2, v3) ,
 //                }
 //            }
 //            NodeToken :: Set ( value ) => {
@@ -135,22 +138,18 @@ enum SomeEnum {
 //}
 
 #[test]
-fn get_enum() {
+fn get_unit_enum() {
     let mut some_enum = SomeEnum::Foo;
-    let runner = NodeRunner { tokens: vec!(
-        NodeToken::Get
-    )};
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
     assert_eq!(some_enum.node_step(runner), "Foo");
 
     let mut some_enum = SomeEnum::Bar;
-    let runner = NodeRunner { tokens: vec!(
-        NodeToken::Get
-    )};
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
     assert_eq!(some_enum.node_step(runner), "Bar");
 }
 
 #[test]
-fn set_enum() {
+fn set_unit_enum() {
     let mut some_enum = SomeEnum::Bar;
     let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Foo")) )};
     some_enum.node_step(runner);
@@ -175,6 +174,29 @@ fn set_enum() {
     let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("Aether")) )};
     assert_eq!(some_enum.node_step(runner), "Aether is not a valid value for SomeEnum");
     assert!(matches!(some_enum, SomeEnum::Foo));
+}
+
+#[test]
+fn get_tuple_enum() {
+    let mut some_enum = SomeEnum::Qux(42);
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
+    assert_eq!(some_enum.node_step(runner), "Qux(42)");
+
+    let mut some_enum = SomeEnum::Quux(-1337, String::from("YOYOYO"), true);
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
+    assert_eq!(some_enum.node_step(runner), "Quux(-1337, YOYOYO, true)");
+}
+
+#[test]
+fn set_tuple_enum() {
+}
+
+#[test]
+fn get_struct_enum() {
+}
+
+#[test]
+fn set_struct_enum() {
 }
 
 #[test]

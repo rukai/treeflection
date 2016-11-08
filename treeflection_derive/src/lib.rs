@@ -21,6 +21,7 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
         Body::Struct(ref data) => gen_struct(name, data)
     }.to_string();
 
+    //println!("{}", quote_tokens.to_string());
     format!("{} {}", input, quote_tokens.to_string()).parse().unwrap()
 }
 
@@ -50,8 +51,33 @@ fn gen_enum_get(enum_name: &Ident, data: &Vec<Variant>) -> Tokens {
     for variant in data {
         let name = &variant.ident;
         let name_string = name.to_string();
-        match_arms.push(quote! {
-            &mut #enum_name::#name => String::from(#name_string),
+        match_arms.push(match variant.data {
+            VariantData::Unit => {
+                quote! { &mut #enum_name::#name => String::from(#name_string), }
+            }
+            VariantData::Tuple(ref fields) => {
+                let mut tuple_args: Vec<Tokens> = vec!();
+                let mut format_args: Vec<Tokens> = vec!();
+                let mut format_string = name.to_string();
+                format_string.push_str("(");
+
+                for (i, field) in fields.iter().enumerate() {
+                    let arg = Ident::from(format!("v{}", i));
+
+                    tuple_args.push(quote!( ref #arg ));
+                    format_args.push(quote!( #arg ));
+
+                    format_string.push_str("{}, ");
+                }
+                format_string.pop();
+                format_string.pop();
+                format_string.push_str(")");
+
+                quote! { &mut #enum_name::#name( #( #tuple_args ),*) => format!(#format_string, #( #format_args ),*), }
+            }
+            VariantData::Struct(ref fields) => {
+                quote! { }
+            }
         });
     }
     quote! {
@@ -67,8 +93,16 @@ fn gen_enum_set(enum_name: &Ident, data: &Vec<Variant>) -> Tokens {
     for variant in data {
         let name = &variant.ident;
         let name_string = name.to_string();
-        match_arms.push(quote! {
-            #name_string => { *self = #enum_name::#name; String::from("") },
+        match_arms.push(match variant.data {
+            VariantData::Unit => {
+                quote! { #name_string => { *self = #enum_name::#name; String::from("") },}
+            }
+            VariantData::Tuple(ref fields) => {
+                quote! { }
+            }
+            VariantData::Struct(ref fields) => {
+                quote! { }
+            }
         });
     }
     quote! {
