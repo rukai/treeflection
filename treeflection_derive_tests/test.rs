@@ -126,9 +126,36 @@ enum SomeEnum {
 //                }
 //            }
 //            NodeToken :: Set ( value ) => {
-//                match value.as_ref() {
-//                    "Foo" => { *self = SomeEnum :: Foo; String::from("") } ,
-//                    "Bar" => { *self = SomeEnum :: Bar; String::from("") } ,
+//                // TODO: Handle value not in correct format
+//                let mut tokens: Vec<String> = vec!();
+//                let enum_ident = match value.find('(') {
+//                    Some(split_index) => {
+//                        let inner_ident = &value[..split_index];
+//                        let tuple = &value[split_index+1..value.len()-1];
+//                        for element in tuple.split(',') {
+//                            tokens.push(element.trim().to_string());
+//                        }
+//                        inner_ident
+//                    }
+//                    None => {
+//                        value.as_str()
+//                    }
+//                };
+//                match enum_ident {
+//                    "Foo" => { *self = SomeEnum :: Foo; String :: from("") } ,
+//                    "Bar" => { *self = SomeEnum :: Bar; String :: from("") } ,
+//                    "Qux" => {
+//                        let v0 = tokens[0].parse::<u8>().unwrap();
+//                        *self = SomeEnum :: Qux (v0);
+//                        String :: from("")
+//                    } ,
+//                    "Quux" => {
+//                        let v0 = tokens[0].parse::<i64>().unwrap();
+//                        let v1 = tokens[1].clone();
+//                        let v2 = tokens[2].parse::<bool>().unwrap();
+//                        *self = SomeEnum :: Quux (v0, v1, v2);
+//                        String :: from("")
+//                    } ,
 //                    value_miss => { format!("{} is not a valid value for {}", value_miss, "SomeEnum") },
 //                }
 //            }
@@ -189,6 +216,15 @@ fn get_tuple_enum() {
 
 #[test]
 fn set_tuple_enum() {
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("Qux(13)"))) };
+    some_enum.node_step(runner);
+    assert!(matches!(some_enum, SomeEnum::Qux(13)));
+
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("Quux(-42, SomeString, true)"))) };
+    some_enum.node_step(runner);
+    assert!(matches!(some_enum, SomeEnum::Quux(-42, SomeString, true)));
 }
 
 #[test]
