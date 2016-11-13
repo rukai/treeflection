@@ -7,7 +7,7 @@ pub trait Node {
     fn node_step(&mut self, runner: NodeRunner) -> String;
 }
 
-impl<U> Node for Vec<U> where U: Node + Serialize + Deserialize {
+impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {
@@ -16,7 +16,7 @@ impl<U> Node for Vec<U> where U: Node + Serialize + Deserialize {
                     Some (item) => item.node_step(runner),
                     None      => return format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
                 }
-            },
+            }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) }
             NodeToken::Get => {
                 serde_json::to_string(self).unwrap()
@@ -36,6 +36,58 @@ impl<U> Node for Vec<U> where U: Node + Serialize + Deserialize {
         }
     }
 }
+
+macro_rules! tuple_node {
+    ( $( $indexes:tt $types:ident ),* ) => {
+        impl <$( $types ),*> Node for ($( $types, )*) where $( $types: Node + Serialize + Deserialize),* {
+            fn node_step(&mut self, mut runner: NodeRunner) -> String {
+                let name = stringify!{ ($( $types, )*) };
+                match runner.step() {
+                    NodeToken::ChainIndex (index) => {
+                        match index {
+                            $(
+                                $indexes => self.$indexes.node_step(runner),
+                            )*
+                            _ => format!("Used index {} on a {}", index, name)
+                        }
+                    }
+                    NodeToken::Get => {
+                        serde_json::to_string(self).unwrap()
+                    }
+                    NodeToken::Set (value) => {
+                        match serde_json::from_str(&value) {
+                            Ok (result) => {
+                                *self = result;
+                                String::from("")
+                            }
+                            Err (err) => {
+                                format!("{} set error: {}", name, err)
+                            }
+                        }
+                    }
+                    action => { format!("{} cannot '{:?}'", name, action) }
+                }
+            }
+        }
+    }
+}
+
+tuple_node!(0 T0);
+tuple_node!(0 T0, 1 T1);
+tuple_node!(0 T0, 1 T1, 2 T2);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11, 12 T12);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11, 12 T12, 13 T13);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11, 12 T12, 13 T13, 14 T14);
+tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11, 12 T12, 13 T13, 14 T14, 15 T15);
 
 impl Node for bool {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
