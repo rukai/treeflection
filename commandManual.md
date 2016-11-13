@@ -2,23 +2,29 @@
 
 This manual does not accurately reflect current functionality.
 
+Your own types can impl the actions your own way or you can use the treeflection_derive crate which will automatically impl as below.
+
 ## Syntax
 
 TODO: Exact description
 
 ## Actions
 
-You can implement your own actions for your own types.
-
 Standard types have the following actions implemented by default:
-*   <attribute>.set <value> - change an attribute to the specified size
-*   <attribute>.get <depth> - display an attribute, the depth argument is optional and specifies how deeply nested object attributes should be shown.
-*   <attribute>.copy        - copy the specified attribute
-*   <attribute>.paste       - paste the copied attribute to the specified attribute (Must be the same type)
+*   `<property> set <value>` - set the property to the specified json input
+*   `<property> get`         - display the attribute in json
+*   `<property> copy`        - stores the result of `get` in your clipboard
+*   `<property> paste`       - runs the contents of your clipboard on `set`
 
-## Indexing
+## Dot Notation
 
-By default indexing is implemented for Vec and HashMap:
+Dot notation is used to access the properties of structs and enum structs:
+
+`foo.bar.baz`
+
+## Index Notation
+
+Index notation is used to access the properties of Vec, HashMap, tuples and tuple enums
 
 *   `foo["M"]`             HashMaps can be accessed via strings
 *   `bar[0]`               select element 0 of bar

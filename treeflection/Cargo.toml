@@ -8,3 +8,5 @@ repository = "https://github.com/rukai/treeflection"
 keywords = ["reflection", "tree", "treeflection"]
 
 [dependencies]
+serde = "0.8"
+serde_json = "0.8"

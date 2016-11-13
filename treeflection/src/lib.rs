@@ -1,8 +1,13 @@
+extern crate serde;
+extern crate serde_json;
+
+use serde::{Serialize, Deserialize};
+
 pub trait Node {
     fn node_step(&mut self, runner: NodeRunner) -> String;
 }
 
-impl<U> Node for Vec<U> where U: Node {
+impl<U> Node for Vec<U> where U: Node + Serialize + Deserialize {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {
@@ -13,6 +18,20 @@ impl<U> Node for Vec<U> where U: Node {
                 }
             },
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) }
+            NodeToken::Get => {
+                serde_json::to_string(self).unwrap()
+            }
+            NodeToken::Set(value) => {
+                match serde_json::from_str(&value) {
+                    Ok(result) => {
+                        *self = result;
+                        String::from("")
+                    }
+                    Err(err) => {
+                        format!("vector set error: {}", err)
+                    }
+                }
+            }
             action => { format!("vector cannot '{:?}'", action) }
         }
     }
@@ -184,7 +203,6 @@ impl NodeRunner {
     }
 }
 
-#[derive(Debug)]
 pub enum NodeTokenProgress {
     ChainProperty,
     ChainIndex,

@@ -1,10 +1,13 @@
 #![feature(proc_macro, proc_macro_lib)]
 
-extern crate syn;
-#[macro_use]
-extern crate quote;
+#[macro_use] extern crate quote;
 
+extern crate syn;
+extern crate regex;
 extern crate proc_macro;
+extern crate serde;
+extern crate serde_json;
+
 use proc_macro::TokenStream;
 
 use syn::{Body, Ident, Variant, VariantData, Visibility};
@@ -25,19 +28,46 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
     format!("{} {}", input, quote_tokens.to_string()).parse().unwrap()
 }
 
+fn gen_get(name: &str) -> Tokens {
+    quote! {
+        match serde_json::to_string(self) {
+            Ok(result) => {
+                result
+            }
+            Err(err) => {
+                format!("{} get Error: {}", #name, err)
+            }
+        }
+    }
+}
+
+fn gen_set(name: &str) -> Tokens {
+    quote! {
+        match serde_json::from_str(value.as_str()) {
+            Ok(result) => {
+                *self = result;
+                String::from("")
+            }
+            Err(err) => {
+                format!("{} set Error: {}", #name, err)
+            }
+        }
+    }
+}
+
 fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
-    let match_get = gen_enum_get(name, data);
-    let match_set = gen_enum_set(name, data);
     let name_string = name.to_string();
+    let get_arm = gen_get(&name_string);
+    let set_arm = gen_set(&name_string);
     quote! {
         impl Node for #name {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 match runner.step() {
                     NodeToken::Get => {
-                        #match_get
+                        #get_arm
                     }
                     NodeToken::Set (value) => {
-                        #match_set
+                        #set_arm
                     }
                     action => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
@@ -46,75 +76,10 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     }
 }
 
-fn gen_enum_get(enum_name: &Ident, data: &Vec<Variant>) -> Tokens {
-    let mut match_arms: Vec<Tokens> = vec!();
-    for variant in data {
-        let name = &variant.ident;
-        let name_string = name.to_string();
-        match_arms.push(match variant.data {
-            VariantData::Unit => {
-                quote! { &mut #enum_name::#name => String::from(#name_string), }
-            }
-            VariantData::Tuple(ref fields) => {
-                let mut tuple_args: Vec<Tokens> = vec!();
-                let mut format_args: Vec<Tokens> = vec!();
-                let mut format_string = name.to_string();
-                format_string.push_str("(");
-
-                for (i, field) in fields.iter().enumerate() {
-                    let arg = Ident::from(format!("v{}", i));
-
-                    tuple_args.push(quote!( ref #arg ));
-                    format_args.push(quote!( #arg ));
-
-                    format_string.push_str("{}, ");
-                }
-                format_string.pop();
-                format_string.pop();
-                format_string.push_str(")");
-
-                quote! { &mut #enum_name::#name( #( #tuple_args ),*) => format!(#format_string, #( #format_args ),*), }
-            }
-            VariantData::Struct(ref fields) => {
-                quote! { }
-            }
-        });
-    }
-    quote! {
-        match self {
-            #( #match_arms )*
-        }
-    }
-}
-
-fn gen_enum_set(enum_name: &Ident, data: &Vec<Variant>) -> Tokens {
-    let enum_name_string = enum_name.to_string();
-    let mut match_arms: Vec<Tokens> = vec!();
-    for variant in data {
-        let name = &variant.ident;
-        let name_string = name.to_string();
-        match_arms.push(match variant.data {
-            VariantData::Unit => {
-                quote! { #name_string => { *self = #enum_name::#name; String::from("") },}
-            }
-            VariantData::Tuple(ref fields) => {
-                quote! { }
-            }
-            VariantData::Struct(ref fields) => {
-                quote! { }
-            }
-        });
-    }
-    quote! {
-        match value.as_ref() {
-            #( #match_arms )*
-            value_miss => { format!("{} is not a valid value for {}", value_miss, #enum_name_string) }
-        }
-    }
-}
-
 fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
     let name_string = name.to_string();
+    let get_arm = gen_get(&name_string);
+    let set_arm = gen_set(&name_string);
     let match_property = gen_struct_chain_property(&name_string, data);
 
     quote! {
@@ -123,10 +88,13 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
                 match runner.step() {
                     NodeToken::ChainProperty (property) => {
                         #match_property
-                    }
+                    },
                     NodeToken::Get => {
-                        format!("This is a {}", "struct")
-                    }
+                        #get_arm
+                    },
+                    NodeToken::Set (value) => {
+                        #set_arm
+                    },
                     action => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
             }

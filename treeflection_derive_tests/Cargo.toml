@@ -7,6 +7,9 @@ authors = ["Rukai <rubickent@gmail.com>"]
 matches = "0.1.4"
 treeflection = { path = "../treeflection" }
 treeflection_derive = { path = "../treeflection_derive" }
+serde = "0.8"
+serde_json = "0.8"
+serde_derive = "0.8"
 
 [[test]]
 name = "test"
