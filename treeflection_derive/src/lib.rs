@@ -30,6 +30,7 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
 
 fn gen_get(name: &str) -> Tokens {
     quote! {
+        use serde_json;
         match serde_json::to_string(self) {
             Ok(result) => {
                 result
@@ -43,6 +44,7 @@ fn gen_get(name: &str) -> Tokens {
 
 fn gen_set(name: &str) -> Tokens {
     quote! {
+        use serde_json;
         match serde_json::from_str(value.as_str()) {
             Ok(result) => {
                 *self = result;

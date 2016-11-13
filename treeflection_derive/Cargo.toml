@@ -1,6 +1,6 @@
 [package]
 name = "treeflection_derive"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Rukai <rubickent@gmail.com>"]
 description = "#[derive(Node)] macro for the Treeflection library"
 license = "MIT"
