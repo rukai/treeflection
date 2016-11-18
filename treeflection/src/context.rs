@@ -53,6 +53,16 @@ impl<T> ContextVec<T> {
         }
     }
 
+    /// Mutably get the value currently pointed to by context
+    pub fn selection_first_mut(&mut self) -> Option<&mut T> {
+        match self.context.first() {
+            Some (value) => {
+                self.vector.get_mut(*value)
+            }
+            None => None
+        }
+    }
+
     /// Get the values currently pointed to by context
     pub fn selection(&self) -> Vec<&T> {
         let mut result: Vec<&T> = vec!();

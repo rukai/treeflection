@@ -53,6 +53,31 @@ fn test_selection_first() {
 }
 
 #[test]
+fn test_selection_first_mut() {
+    // repeat immutable tests
+    let mut context_vec = ContextVec::<i32>::new();
+    assert!(matches!(context_vec.selection_first_mut(), None));
+
+    let mut context_vec = test_vec();
+    assert!(matches!(context_vec.selection_first_mut(), None));
+
+    context_vec.set_context(0);
+    assert_eq!(*context_vec.selection_first_mut().unwrap(), 10);
+
+    context_vec.set_context(2);
+    assert_eq!(*context_vec.selection_first_mut().unwrap(), 42);
+
+    context_vec.set_context_vec(vec!(0, 1, 2));
+    assert_eq!(*context_vec.selection_first_mut().unwrap(), 10);
+
+    // test mutabality
+    *context_vec.selection_first_mut().unwrap() = 9999;
+    assert_eq!(context_vec[0], 9999);
+    assert_eq!(context_vec[1], 1337);
+    assert_eq!(context_vec[2], 42);
+}
+
+#[test]
 fn test_selection() {
     let context_vec = ContextVec::<i32>::new();
     assert_eq!(context_vec.selection().len(), 0);
