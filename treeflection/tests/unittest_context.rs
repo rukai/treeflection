@@ -35,6 +35,47 @@ fn test_chain_context() {
 }
 
 #[test]
+fn test_selection_first() {
+    let context_vec = ContextVec::<i32>::new();
+    assert!(matches!(context_vec.selection_first(), None));
+
+    let mut context_vec = test_vec();
+    assert!(matches!(context_vec.selection_first(), None));
+
+    context_vec.set_context(0);
+    assert_eq!(*context_vec.selection_first().unwrap(), 10);
+
+    context_vec.set_context(2);
+    assert_eq!(*context_vec.selection_first().unwrap(), 42);
+
+    context_vec.set_context_vec(vec!(0, 1, 2));
+    assert_eq!(*context_vec.selection_first().unwrap(), 10);
+}
+
+#[test]
+fn test_selection() {
+    let context_vec = ContextVec::<i32>::new();
+    assert_eq!(context_vec.selection().len(), 0);
+
+    let mut context_vec = test_vec();
+    assert_eq!(context_vec.selection().len(), 0);
+
+    context_vec.set_context(0);
+    assert_eq!(context_vec.selection().len(), 1);
+    assert_eq!(*context_vec.selection()[0], 10);
+
+    context_vec.set_context(2);
+    assert_eq!(context_vec.selection().len(), 1);
+    assert_eq!(*context_vec.selection()[0], 42);
+
+    context_vec.set_context_vec(vec!(0, 1, 2));
+    assert_eq!(context_vec.selection().len(), 3);
+    assert_eq!(*context_vec.selection()[0], 10);
+    assert_eq!(*context_vec.selection()[1], 1337);
+    assert_eq!(*context_vec.selection()[2], 42);
+}
+
+#[test]
 fn test_clear_context() {
     let mut context_vec = test_vec();
     context_vec.set_context(0);

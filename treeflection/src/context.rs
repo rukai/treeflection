@@ -13,6 +13,19 @@ pub struct ContextVec<T> {
     vector:  Vec<T>,
 }
 
+/// The purpose of a ContextVec is to provide a way for commands to easily access relevant values.
+/// The command `foo[?] get` will display the values in foo that the context points to.
+///
+/// # Contents
+///
+/// *   `vector: Vec<T>`
+/// *   `context: Vec<usize>`
+///
+/// # Invariants
+///
+/// *   the values in context will point to a valid value in vector
+/// *   the values in context will continue to point to the same value in vector (even after operations like insert and remove)
+
 impl<T> ContextVec<T> {
     /// Create a new empty ContextVec
     pub fn new() -> ContextVec<T> {
@@ -28,6 +41,25 @@ impl<T> ContextVec<T> {
             context: vec!(),
             vector: vector,
         }
+    }
+
+    /// Get the value currently pointed to by context
+    pub fn selection_first(&self) -> Option<&T> {
+        match self.context.first() {
+            Some (value) => {
+                self.vector.get(*value)
+            }
+            None => None
+        }
+    }
+
+    /// Get the values currently pointed to by context
+    pub fn selection(&self) -> Vec<&T> {
+        let mut result: Vec<&T> = vec!();
+        for i in &self.context {
+            result.push(self.vector.get(*i).unwrap());
+        }
+        result
     }
 
     /// Get a slice of the context
@@ -78,8 +110,8 @@ impl<T> ContextVec<T> {
         }
     }
 
-    /// Set to a new vector
-    /// clears the context
+    /// Set to a new vector.
+    /// Clears the context.
     pub fn set_vec(&mut self, vector: Vec<T>) {
         self.context.clear();
         self.vector = vector;
@@ -96,8 +128,8 @@ impl<T> ContextVec<T> {
         self.vector.push(value);
     }
 
-    /// Insert a value into the vector
-    /// invalid context indices are updated
+    /// Insert a value into the vector.
+    /// Invalid context indices are updated.
     pub fn insert(&mut self, index: usize, value: T) {
         self.vector.insert(index, value);
 
@@ -108,8 +140,8 @@ impl<T> ContextVec<T> {
         }
     }
 
-    /// Pop a value from the end of the vector
-    /// if it succeeds invalid context indices are removed
+    /// Pop a value from the end of the vector.
+    /// If it succeeds invalid context indices are removed.
     pub fn pop(&mut self) -> Option<T> {
         match self.vector.pop() {
             Some(value) => {
@@ -123,9 +155,9 @@ impl<T> ContextVec<T> {
         }
     }
 
-    /// Remove a value at the specified index
-    /// deletes any context indices pointing to the removed value
-    /// shifts all larger context indices down
+    /// Remove a value at the specified index.
+    /// Deletes any context indices pointing to the removed value.
+    /// Shifts all larger context indices down.
     pub fn remove(&mut self, to_remove: usize) -> T {
         let element = self.vector.remove(to_remove);
         let mut new_context: Vec<usize> = vec!();
@@ -189,7 +221,7 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize {
                             combined.push_str(result.as_str());
                         }
                         None => {
-                            combined.push_str("Context out of range");
+                            combined.push_str("Context out of range. This should never happen.");
                         }
                     }
                     combined.push('|');
