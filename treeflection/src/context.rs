@@ -7,6 +7,7 @@ use ::node::Node;
 use ::node_runner::NodeRunner;
 use ::node_token::NodeToken;
 
+#[derive(Clone)]
 pub struct ContextVec<T> {
     context: Vec<usize>,
     vector:  Vec<T>,
@@ -55,7 +56,7 @@ impl<T> ContextVec<T> {
     }
 
     // TODO: Could speed up set_context* by only running checks in dev builds
-    /// Clears the old context, sets to a new single value context
+    /// Sets a new context
     pub fn set_context(&mut self, value: usize) {
         let length = self.vector.len();
         if value >= length {
@@ -65,7 +66,7 @@ impl<T> ContextVec<T> {
         self.context.push(value);
     }
 
-    /// Clears the old context, sets to a new context
+    /// Sets a new context
     pub fn set_context_vec(&mut self, mut values: Vec<usize>) {
         self.context.clear();
         let length = self.vector.len();
@@ -77,7 +78,8 @@ impl<T> ContextVec<T> {
         }
     }
 
-    /// Set to a new vector, clears the context
+    /// Set to a new vector
+    /// clears the context
     pub fn set_vec(&mut self, vector: Vec<T>) {
         self.context.clear();
         self.vector = vector;
@@ -94,7 +96,8 @@ impl<T> ContextVec<T> {
         self.vector.push(value);
     }
 
-    /// Insert a value into the vector, invalid context indexes are updated
+    /// Insert a value into the vector
+    /// invalid context indices are updated
     pub fn insert(&mut self, index: usize, value: T) {
         self.vector.insert(index, value);
 
@@ -105,26 +108,37 @@ impl<T> ContextVec<T> {
         }
     }
 
-    /// Pop a value from the end of the vector, if it succeeds invalid context indexes are removed
+    /// Pop a value from the end of the vector
+    /// if it succeeds invalid context indices are removed
     pub fn pop(&mut self) -> Option<T> {
         match self.vector.pop() {
             Some(value) => {
-                // update context
                 let len = self.vector.len();
-                let mut new_context: Vec<usize> = vec!();
-                for i in self.context.drain(..) {
-                    if i < len {
-                        new_context.push(i);
-                    }
-                }
-                self.context = new_context;
-
+                self.context.retain(|&x| x < len);
                 Some(value)
             }
             None => {
                 None
             }
         }
+    }
+
+    /// Remove a value at the specified index
+    /// deletes any context indices pointing to the removed value
+    /// shifts all larger context indices down
+    pub fn remove(&mut self, to_remove: usize) -> T {
+        let element = self.vector.remove(to_remove);
+        let mut new_context: Vec<usize> = vec!();
+        for i in self.context.drain(..) {
+            if i < to_remove {
+                new_context.push(i);
+            }
+            else if i > to_remove {
+                new_context.push(i-1);
+            }
+        }
+        self.context = new_context;
+        element
     }
 }
 

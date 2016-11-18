@@ -167,6 +167,43 @@ fn test_pop() {
 }
 
 #[test]
+fn test_remove() {
+    let mut context_vec = test_vec();
+    context_vec.remove(2);
+    assert_eq!(context_vec.len(), 2);
+    assert_eq!(context_vec[0], 10);
+    assert_eq!(context_vec[1], 1337);
+    assert_eq!(context_vec.get_context().len(), 0);
+
+    let mut context_vec = test_vec();
+    context_vec.set_context(0);
+    context_vec.remove(0);
+    assert_eq!(context_vec.len(), 2);
+    assert_eq!(context_vec[0], 1337);
+    assert_eq!(context_vec[1], 42);
+    let context = context_vec.get_context();
+    assert_eq!(context.len(), 0);
+
+    let mut context_vec = test_vec();
+    context_vec.set_context_vec(vec!(0, 1, 2));
+    context_vec.remove(1);
+    assert_eq!(context_vec.len(), 2);
+    assert_eq!(context_vec[0], 10);
+    assert_eq!(context_vec[1], 42);
+    let context = context_vec.get_context();
+    assert_eq!(context.len(), 2);
+    assert_eq!(context[0], 0);
+    assert_eq!(context[1], 1);
+}
+
+#[test]
+#[should_panic]
+fn test_remove_out_of_bounds() {
+    let mut context_vec = test_vec();
+    context_vec.remove(3);
+}
+
+#[test]
 fn test_deref_coercion() {
     let context_vec = test_vec();
     assert_eq!(context_vec[0], 10);
