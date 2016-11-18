@@ -1,4 +1,5 @@
 use std::vec::Vec;
+use std::ops::{Deref, DerefMut};
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde_json;
 
@@ -8,7 +9,7 @@ use ::node_token::NodeToken;
 
 pub struct ContextVec<T> {
     context: Vec<usize>,
-    vector:        Vec<T>,
+    vector:  Vec<T>,
 }
 
 impl<T> ContextVec<T> {
@@ -28,14 +29,24 @@ impl<T> ContextVec<T> {
         }
     }
 
-    /// Get a reference to the context
-    pub fn get_context(&self) -> &Vec<usize> {
+    /// Get a slice of the context
+    pub fn get_context(&self) -> &[usize] {
         &self.context
     }
 
-    /// Get a reference to the vector
-    pub fn get_vec(&self) -> &Vec<T> {
-        &self.vector
+    /// Consume the ContextVec into the context
+    pub fn into_context(self) -> Vec<usize> {
+        self.context
+    }
+
+    /// Consume the ContextVec into the vector
+    pub fn into_vector(self) -> Vec<T> {
+        self.vector
+    }
+
+    /// Consume the ContextVec into a tuple of the context and the vector
+    pub fn into_tuple(self) -> (Vec<usize>, Vec<T>) {
+        (self.context, self.vector)
     }
 
     /// Clears the context
@@ -70,6 +81,12 @@ impl<T> ContextVec<T> {
     pub fn set_vec(&mut self, vector: Vec<T>) {
         self.context.clear();
         self.vector = vector;
+    }
+
+    /// Clears the vector and the context
+    pub fn clear(&mut self) {
+        self.context.clear();
+        self.vector.clear();
     }
 
     /// Push a value to the end of the vector
@@ -108,6 +125,19 @@ impl<T> ContextVec<T> {
                 None
             }
         }
+    }
+}
+
+impl<T> Deref for ContextVec<T> {
+    type Target = [T];
+    fn deref(&self) -> &[T] {
+        &self.vector
+    }
+}
+
+impl<T> DerefMut for ContextVec<T> {
+    fn deref_mut(&mut self) -> &mut [T] {
+        &mut self.vector
     }
 }
 
