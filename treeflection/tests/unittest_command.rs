@@ -54,7 +54,7 @@ fn paste() {
  */
 
 #[test]
-fn index() {
+fn chain_index() {
     let expected = vec!(
         NodeToken::Get,
         NodeToken::ChainIndex(13),
@@ -64,7 +64,7 @@ fn index() {
 }
 
 #[test]
-fn key() {
+fn chain_context() {
     let expected = vec!(
         NodeToken::Get,
         NodeToken::ChainKey(String::from("key")),
@@ -74,12 +74,25 @@ fn key() {
 }
 
 #[test]
+fn chain_key() {
+    let expected = vec!(
+        NodeToken::Get,
+        NodeToken::ChainContext,
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo[?] get");
+}
+
+#[test]
 fn complex_path() {
     let expected = vec!(
         NodeToken::Get,
         NodeToken::ChainProperty(String::from("final")),
         NodeToken::ChainIndex(9999),
+        NodeToken::ChainContext,
+        NodeToken::ChainContext,
         NodeToken::ChainProperty(String::from("almost")),
+        NodeToken::ChainContext,
         NodeToken::ChainKey(String::from("strings")),
         NodeToken::ChainProperty(String::from("arbitrary")),
         NodeToken::ChainKey(String::from("more")),
@@ -89,5 +102,5 @@ fn complex_path() {
         NodeToken::ChainProperty(String::from("bar")),
         NodeToken::ChainProperty(String::from("foo")),
     );
-    assert_command(expected, "foo.bar.baz[2][3][more].arbitrary[strings].almost[9999].final get");
+    assert_command(expected, "foo.bar.baz[2][3][more].arbitrary[strings][?].almost[?][?][9999].final get");
 }

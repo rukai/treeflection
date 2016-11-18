@@ -14,6 +14,7 @@ impl NodeRunner {
         // *   ChainProperty - starts with '.'
         // *   ChainKey      - starts with '[0-9' ends with ']'
         // *   ChainIndex    - starts with '[a-z' ends with ']'
+        // *   ChainContext  - is '[?]'
         // repeat until space found
         // then add identifier as action including any arguments seperated by spaces
         let mut tokens: Vec<NodeToken> = vec!();
@@ -51,9 +52,12 @@ impl NodeRunner {
                         }
                         NodeToken::ChainKey (token_str.to_string())
                     }
-                    NodeTokenProgress::Action => {
-                        NodeToken::Get
+
+                    NodeTokenProgress::ChainContext => {
+                        NodeToken::ChainContext
                     }
+
+                    _ => { return Err(String::from("Whooops. This shouldnt happen.")) }
                 });
                 token_begin = i+1;
             }
@@ -73,6 +77,9 @@ impl NodeRunner {
                         }
                         else if next_c.is_alphabetic() {
                             token_progress = NodeTokenProgress::ChainKey;
+                        }
+                        else if *next_c == '?' {
+                            token_progress = NodeTokenProgress::ChainContext;
                         }
                         else {
                             return Err (String::from("Not a valid key or index."));
@@ -121,6 +128,7 @@ impl NodeRunner {
 }
 
 pub enum NodeTokenProgress {
+    ChainContext,
     ChainProperty,
     ChainIndex,
     ChainKey,

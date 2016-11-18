@@ -182,9 +182,7 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize {
             }
             NodeToken::ChainContext => {
                 let mut combined = String::from("|");
-                println!("RFOLL");
                 for i in self.context.iter() {
-                    println!("LOL{}", i);
                     match self.vector.get_mut(*i) {
                         Some(ref mut node) => {
                             let result = node.node_step(runner.clone());
