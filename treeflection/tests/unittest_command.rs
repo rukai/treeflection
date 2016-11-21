@@ -32,6 +32,15 @@ fn set() {
 }
 
 #[test]
+fn set_with_space() {
+    let expected = vec!(
+        NodeToken::Set(String::from("something with space")),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo set something with space");
+}
+
+#[test]
 fn copy() {
     let expected = vec!(
         NodeToken::CopyFrom,

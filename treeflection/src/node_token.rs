@@ -4,6 +4,8 @@ pub enum NodeToken {
     ChainIndex (usize),
     ChainKey (String),
     ChainContext,
+    Help,
+    Edit,
     Get,
     Set (String),
     CopyFrom,

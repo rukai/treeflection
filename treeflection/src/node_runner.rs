@@ -97,12 +97,16 @@ impl NodeRunner {
         if let NodeTokenProgress::Action = token_progress {
             let mut action = command[token_begin..].split_whitespace();
             tokens.push(match action.next() {
-                Some("get") => NodeToken::Get,
-                Some("set") => {
-                    match action.next() {
-                        Some(arg) => NodeToken::Set(arg.to_string()),
-                        None => return Err (String::from("No argument given to set action"))
+                Some("help") => NodeToken::Help,
+                Some("edit") => NodeToken::Edit,
+                Some("get")  => NodeToken::Get,
+                Some("set")  => {
+                    // TODO: All groups of whitespace get converted into a single string. This could be an issue.
+                    let mut set_value: Vec<&str> = vec!();
+                    for token in action {
+                        set_value.push(token);
                     }
+                    NodeToken::Set(set_value.join(" "))
                 }
                 Some("copy")  => NodeToken::CopyFrom,
                 Some("paste") => NodeToken::PasteTo,
@@ -115,7 +119,7 @@ impl NodeRunner {
         }
 
         tokens.reverse();
-        println!("{:?}", tokens);
+        println!("{:?}", tokens); // TODO: This should be deleted, it is really useful for now though ...
 
         Ok(NodeRunner {
             tokens: tokens
