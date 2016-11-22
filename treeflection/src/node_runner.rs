@@ -2,7 +2,7 @@ use ::node_token::NodeToken;
 
 #[derive(Clone)]
 pub struct NodeRunner {
-    pub tokens: Vec<NodeToken>
+    pub tokens: Vec<NodeToken>,
 }
 
 impl NodeRunner {

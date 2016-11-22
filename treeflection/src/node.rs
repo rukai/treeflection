@@ -20,7 +20,7 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
             }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) }
             NodeToken::Get => {
-                serde_json::to_string(self).unwrap()
+                serde_json::to_string_pretty(self).unwrap()
             }
             NodeToken::Set(value) => {
                 match serde_json::from_str(&value) {
@@ -53,7 +53,7 @@ macro_rules! tuple_node {
                         }
                     }
                     NodeToken::Get => {
-                        serde_json::to_string(self).unwrap()
+                        serde_json::to_string_pretty(self).unwrap()
                     }
                     NodeToken::Set (value) => {
                         match serde_json::from_str(&value) {

@@ -50,7 +50,7 @@ fn vec_chain_index() {
 #[test]
 fn vec_get() {
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!("[100000,13,-358,42]", test_vec().node_step(runner));
+    assert_eq!("[\n  100000,\n  13,\n  -358,\n  42\n]", test_vec().node_step(runner));
 }
 
 #[test]
@@ -96,10 +96,10 @@ fn tuple_chain_index() {
 #[test]
 fn tuple_get() {
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!(test_tuple().node_step(runner), String::from("[42,true]"));
+    assert_eq!(test_tuple().node_step(runner), String::from("[\n  42,\n  true\n]"));
 
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!(test_tuple16().node_step(runner), String::from("[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]"));
+    assert_eq!(test_tuple16().node_step(runner), String::from("[\n  0,\n  1,\n  2,\n  3,\n  4,\n  5,\n  6,\n  7,\n  8,\n  9,\n  10,\n  11,\n  12,\n  13,\n  14,\n  15\n]"));
 }
 
 #[test]

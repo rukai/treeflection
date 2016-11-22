@@ -14,7 +14,7 @@ pub struct ContextVec<T> {
 }
 
 /// The purpose of a ContextVec is to provide a way for commands to easily access relevant values.
-/// The command `foo[?] get` will display the values in foo that the context points to.
+/// If we have  ContextVec named foo, the command `foo[?] get` will display the values in foo that the context points to.
 ///
 /// # Contents
 ///
