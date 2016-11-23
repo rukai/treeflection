@@ -24,8 +24,7 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
         Body::Struct(ref data) => gen_struct(name, data)
     }.to_string();
 
-    //println!("{}", quote_tokens.to_string());
-    format!("{} {}", input, quote_tokens.to_string()).parse().unwrap()
+    quote_tokens.to_string().parse().unwrap()
 }
 
 fn gen_get(name: &str) -> Tokens {
