@@ -44,9 +44,19 @@ impl Parent {
 
 #[test]
 fn get_struct() {
+    let output =
+r#"{
+  "foo": "hiya",
+  "bar": 42,
+  "baz": true,
+  "child": {
+    "qux": -13
+  },
+  "private": 1337
+}"#;
     assert_eq!(
         Parent::new().node_step(NodeRunner { tokens: vec!(NodeToken::Get) }),
-        String::from(r#"{"foo":"hiya","bar":42,"baz":true,"child":{"qux":-13},"private":1337}"#)
+        String::from(output)
     );
 }
 
@@ -177,11 +187,23 @@ fn set_unit_enum() {
 fn get_tuple_enum() {
     let mut some_enum = SomeEnum::Qux(42);
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!(some_enum.node_step(runner), "{\"Qux\":42}");
+    let output =
+r#"{
+  "Qux": 42
+}"#;
+    assert_eq!(some_enum.node_step(runner), output);
 
     let mut some_enum = SomeEnum::Quux(-1337, String::from("YOYOYO"), true);
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!(some_enum.node_step(runner), "{\"Quux\":[-1337,\"YOYOYO\",true]}");
+    let output =
+r#"{
+  "Quux": [
+    -1337,
+    "YOYOYO",
+    true
+  ]
+}"#;
+    assert_eq!(some_enum.node_step(runner), output);
 }
 
 #[test]
@@ -202,7 +224,14 @@ fn set_tuple_enum() {
 fn get_struct_enum() {
     let mut some_enum = SomeEnum::Baz {x: 412.12345, y: 44.11};
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    assert_eq!(some_enum.node_step(runner), r#"{"Baz":{"x":412.12344,"y":44.11}}"#);
+    let output = 
+r#"{
+  "Baz": {
+    "x": 412.12344,
+    "y": 44.11
+  }
+}"#;
+    assert_eq!(some_enum.node_step(runner), output);
 }
 
 #[test]

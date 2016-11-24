@@ -30,7 +30,7 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
 fn gen_get(name: &str) -> Tokens {
     quote! {
         use serde_json;
-        match serde_json::to_string(self) {
+        match serde_json::to_string_pretty(self) {
             Ok(result) => {
                 result
             }
