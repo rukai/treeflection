@@ -135,6 +135,26 @@ fn int_child_property() {
     assert_eq!(Parent::new().node_step(runner), "-13");
 }
 
+#[test]
+fn help_struct() {
+let output = r#"
+Parent Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   foo - String
+*   bar - u32
+*   baz - bool
+*   child - Child"#;
+    let mut parent = Parent::new();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    assert_eq!(parent.node_step(runner), String::from(output));
+}
+
 #[derive(Node, Serialize, Deserialize)]
 enum SomeEnum {
     Foo,
@@ -247,4 +267,32 @@ fn copy_enum() {
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
     assert_eq!(some_enum.node_step(runner), String::from("SomeEnum cannot 'CopyFrom'"));
+}
+
+// TODO: display tuple and struct enum details under valid values:
+// Probably use json equivilent of below
+//*   Foo
+//*   Bar
+//*   Baz {x: f32, y: f32}
+//*   Qux (u8)
+//*   Quux (i64, String, bool)
+#[test]
+fn help_enum() {
+    let output = r#"
+SomeEnum Help
+
+Valid values:
+*   Foo
+*   Bar
+*   Baz
+*   Qux
+*   Quux
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON"#;
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    assert_eq!(some_enum.node_step(runner), String::from(output));
 }

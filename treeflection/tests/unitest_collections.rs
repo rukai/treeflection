@@ -73,6 +73,26 @@ fn vec_set_fail()
 }
 
 #[test]
+fn vec_help()
+{
+    let output = r#"
+Vector Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index
+*   .length - display number of items"#;
+
+    let mut some_vec = test_vec();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    assert_eq!(some_vec.node_step(runner), String::from(output));
+}
+
+#[test]
 fn tuple_chain_index() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
@@ -140,4 +160,21 @@ fn tuple_set_fail() {
     assert_eq!(some_tuple.node_step(runner), String::from("( T0 , T1 , ) set error: invalid type: u64 at line 1 column 5"));
     assert_eq!(some_tuple.0, 42);
     assert_eq!(some_tuple.1, true);
+}
+
+#[test]
+fn tuple_help() {
+    let output = r#"
+Tuple Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index"#;
+    let mut some_tuple = test_tuple();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    assert_eq!(some_tuple.node_step(runner), String::from(output));
 }

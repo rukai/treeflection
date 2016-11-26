@@ -1,6 +1,6 @@
 [package]
 name = "treeflection"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Rukai <rubickent@gmail.com>"]
 description = "A library that provides reflection for tree structures"
 license = "MIT"

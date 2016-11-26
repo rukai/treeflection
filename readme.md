@@ -17,3 +17,16 @@ The `NodeRunner` is then passed to the children specified in the command and the
 Use the treeflection_derive crate to #[Derive(Node)] for your own structs or write your own handlers.
 
 TODO: give proper example
+
+## Reuse
+
+Some things cannot be changed to be configurable:
+
+*   using a serde Serializer/Deserializer other then serde_json (would require generic closures)
+*   removing the serde dependency entirely
+
+This library is designed around the specific needs of a project of mine.
+It is likely that you will need to either:
+
+*   Make a fork and tweak it to your needs.
+*   Take it as a proof of concept and build your own from scratch.

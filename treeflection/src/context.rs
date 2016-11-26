@@ -209,7 +209,7 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize {
             }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
             NodeToken::Get => {
-                serde_json::to_string(&mut self.vector).unwrap()
+                serde_json::to_string_pretty(&mut self.vector).unwrap()
             }
             NodeToken::Set(value) => {
                 match serde_json::from_str(&value) {
@@ -237,6 +237,20 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize {
                     combined.push('|');
                 }
                 combined
+            }
+            NodeToken::Help => {
+                String::from(r#"
+Context Vector Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index
+*   [?]     - access items at current context
+*   .length - display number of items"#)
             }
             action => { format!("vector cannot '{:?}'", action) }
         }

@@ -35,6 +35,25 @@ fn test_chain_context() {
 }
 
 #[test]
+fn test_help() {
+    let mut context_vec = test_vec();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    let output = r#"
+Context Vector Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index
+*   [?]     - access items at current context
+*   .length - display number of items"#;
+    assert_eq!(context_vec.node_step(runner), String::from(output));
+}
+
+#[test]
 fn test_selection_first() {
     let context_vec = ContextVec::<i32>::new();
     assert!(matches!(context_vec.selection_first(), None));

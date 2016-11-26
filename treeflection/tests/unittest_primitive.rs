@@ -58,6 +58,107 @@ fn int_get() {
 }
 
 #[test]
+fn int_help() {
+    let runner = NodeRunner { tokens: vec!( NodeToken::Help ) };
+
+    let output = r#"
+u8 Help
+
+Valid values: Number from 0 to 255
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: u8 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+u16 Help
+
+Valid values: Number from 0 to 65,535
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: u16 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+u32 Help
+
+Valid values: Number from 0 to 4,294,967,295
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: u32 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+u64 Help
+
+Valid values: Number from 0 to 18,446,744,073,709,551,615
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: u64 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+i8 Help
+
+Valid values: Number from -128 to 127
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: i8 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+i16 Help
+
+Valid values: Number from –32,768 to –32,767
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: i16 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+i32 Help
+
+Valid values: Number from –2,147,483,648 to 2,147,483,647
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: i32 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+i64 Help
+
+Valid values: Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: i64 = 13;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+}
+
+#[test]
 fn i64_copy_message() {
     let mut node: i64 = 5;
     let tokens = vec!(NodeToken::CopyFrom);
@@ -77,6 +178,35 @@ fn float_get() {
 }
 
 #[test]
+fn float_help() {
+    let runner = NodeRunner { tokens: vec!( NodeToken::Help ) };
+
+    let output = r#"
+f32 Help
+
+Valid values: A number with a decimal point
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: f32 = 13.37;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+
+    let output = r#"
+f64 Help
+
+Valid values: A higher precision number with a decimal point
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value: f64 = 13.37;
+    assert_eq!(value.node_step(runner.clone()).as_str(), output);
+}
+
+#[test]
 fn string_set() {
     assert_set::<String>(String::from("Foobar"), "string set", String::from("string set"));
 }
@@ -84,6 +214,22 @@ fn string_set() {
 #[test]
 fn string_get() {
     assert_get::<String>(String::from("foobar"), "foobar");
+}
+
+#[test]
+fn string_help() {
+    let output = r#"
+String Help
+
+Valid values: Anything
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value = String::from("YO");
+    let runner = NodeRunner { tokens: vec!( NodeToken::Help ) };
+    assert_eq!(value.node_step(runner).as_str(), output);
 }
 
 #[test]
@@ -98,4 +244,20 @@ fn bool_set() {
 fn bool_get() {
     assert_get::<bool>(true, "true");
     assert_get::<bool>(false, "false");
+}
+
+#[test]
+fn bool_help() {
+    let output = r#"
+Bool Help
+
+Valid values: true or false
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#;
+    let mut value = true;
+    let runner = NodeRunner { tokens: vec!( NodeToken::Help ) };
+    assert_eq!(value.node_step(runner).as_str(), output);
 }

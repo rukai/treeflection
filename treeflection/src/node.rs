@@ -18,7 +18,7 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
                     None      => return format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
                 }
             }
-            NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) }
+            NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) } // TODO: yeah this should really be a command not a property
             NodeToken::Get => {
                 serde_json::to_string_pretty(self).unwrap()
             }
@@ -32,6 +32,19 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
                         format!("vector set error: {}", err)
                     }
                 }
+            }
+            NodeToken::Help => {
+                String::from(r#"
+Vector Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index
+*   .length - display number of items"#)
             }
             action => { format!("vector cannot '{:?}'", action) }
         }
@@ -66,6 +79,18 @@ macro_rules! tuple_node {
                             }
                         }
                     }
+                    NodeToken::Help => {
+                        String::from(r#"
+Tuple Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index"#)
+                    }
                     action => { format!("{} cannot '{:?}'", name, action) }
                 }
             }
@@ -95,6 +120,17 @@ impl Node for bool {
         match runner.step() {
             NodeToken::Get         => { if *self { String::from("true") } else { String::from("false") } }
             NodeToken::Set (value) => { *self = value.as_str() == "true"; String::from("") }
+            NodeToken::Help        => {
+                String::from(r#"
+Bool Help
+
+Valid values: true or false
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#)
+            }
             action                 => { format!("bool cannot '{:?}'", action) }
         }
     }
@@ -105,18 +141,43 @@ impl Node for String {
         match runner.step() {
             NodeToken::Get         => { (*self).clone() }
             NodeToken::Set (value) => { *self = value; String::from("") }
+            NodeToken::Help        => {
+                String::from(r#"
+String Help
+
+Valid values: Anything
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#)
+            }
             action                 => { format!("String cannot '{:?}'", action) }
         }
     }
 }
 
 macro_rules! int_node {
-    ($e:ty) => {
+    ($e:ty, $valid_values:tt) => {
         impl Node for $e {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 match runner.step() {
                     NodeToken::Get         => { (*self).to_string() }
                     NodeToken::Set (value) => { *self = value.parse().unwrap(); String::from("") }
+                    NodeToken::Help        => {
+                        format!(r#"
+{} Help
+
+Valid values: {}
+
+Commands:
+*   help - display this help
+*   get  - display value
+*   set  - set to value"#,
+                            stringify! { $e },
+                            $valid_values
+                        )
+                    }
                     action                 => { format!("{} cannot '{:?}'", stringify! { $e }, action) }
                 }
             }
@@ -124,15 +185,17 @@ macro_rules! int_node {
     }
 }
 
-int_node!(i64);
-int_node!(u64);
-int_node!(i32);
-int_node!(u32);
-int_node!(i16);
-int_node!(u16);
-int_node!(i8);
-int_node!(u8);
-int_node!(isize);
-int_node!(usize);
-int_node!(f32);
-int_node!(f64);
+int_node!(i64, "Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
+int_node!(u64, "Number from 0 to 18,446,744,073,709,551,615");
+int_node!(i32, "Number from –2,147,483,648 to 2,147,483,647");
+int_node!(u32, "Number from 0 to 4,294,967,295");
+int_node!(i16, "Number from –32,768 to –32,767");
+int_node!(u16, "Number from 0 to 65,535");
+int_node!(i8, "Number from -128 to 127");
+int_node!(u8, "Number from 0 to 255");
+int_node!(isize, "Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
+int_node!(usize, "Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
+
+// TODO: Not sure how to best present possible values for the floats
+int_node!(f32, "A number with a decimal point");
+int_node!(f64, "A higher precision number with a decimal point");

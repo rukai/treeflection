@@ -58,6 +58,24 @@ fn paste() {
     assert_command(expected, "foo paste");
 }
 
+#[test]
+fn edit() {
+    let expected = vec!(
+        NodeToken::Edit,
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo edit");
+}
+
+#[test]
+fn help() {
+    let expected = vec!(
+        NodeToken::Help,
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo help");
+}
+
 /* 
  * Path
  */
