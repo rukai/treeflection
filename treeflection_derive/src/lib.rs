@@ -65,12 +65,20 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     let set_arm = gen_set(&name_string);
     let help_arm = gen_enum_help(&name_string, data);
 
+    // this is required to avoid an unused variable warning from generated code
+    let index_name = if check_using_index(data) {
+        quote! { index }
+    }
+    else {
+        quote! { _ }
+    };
+
     quote! {
         impl Node for #name {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 match runner.step() {
                     NodeToken::ChainProperty (property) => { #property_arm }
-                    NodeToken::ChainIndex (index)       => { #index_arm }
+                    NodeToken::ChainIndex (#index_name) => { #index_arm }
                     NodeToken::Get                      => { #get_arm }
                     NodeToken::Set (value)              => { #set_arm }
                     NodeToken::Help                     => { #help_arm }
@@ -79,6 +87,15 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
             }
         }
     }
+}
+
+fn check_using_index(data: &Vec<Variant>) -> bool {
+    for variant in data {
+        if let VariantData::Tuple (_) = variant.data {
+            return true;
+        }
+    }
+    false
 }
 
 fn gen_enum_property(name: &Ident, data: &Vec<Variant>) -> Tokens {

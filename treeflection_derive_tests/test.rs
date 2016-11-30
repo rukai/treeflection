@@ -164,6 +164,12 @@ enum SomeEnum {
     Quux (i64, String, bool),
 }
 
+// test for unused variable warnings in generated code
+#[derive(Node, Serialize, Deserialize)]
+enum SimpleEnum {
+    Foo,
+}
+
 #[test]
 fn get_unit_enum() {
     let mut some_enum = SomeEnum::Foo;
