@@ -269,6 +269,100 @@ fn copy_enum() {
     assert_eq!(some_enum.node_step(runner), String::from("SomeEnum cannot 'CopyFrom'"));
 }
 
+#[test]
+fn no_property_unit_enum() {
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("notx")),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("Foo does not have a property 'notx'"));
+}
+
+#[test]
+fn no_property_tuple_enum() {
+    let mut some_enum = SomeEnum::Qux(42);
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("notx")),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("Qux does not have a property 'notx'"));
+}
+
+#[test]
+fn no_property_struct_enum() {
+    let mut some_enum = SomeEnum::Baz { x: 42.0, y: 13.37 };
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("notx")),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("Baz does not have a property 'notx'"));
+}
+
+#[test]
+fn f32_property_struct_enum() {
+    let mut some_enum = SomeEnum::Baz { x: 42.0, y: 13.37 };
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("x")),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("42"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("y")),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("13.37"));
+}
+
+#[test]
+fn index_unit_enum() {
+    let mut some_enum = SomeEnum::Foo;
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(0),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("Cannot index Foo"));
+}
+
+#[test]
+fn index_struct_enum() {
+    let mut some_enum = SomeEnum::Baz { x: 42.0, y: 13.37 };
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(0),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("Cannot index Baz"));
+}
+
+#[test]
+fn index_tuple_enum() {
+    let mut some_enum = SomeEnum::Quux(-1337, String::from("YOYOYO"), true);
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(0),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("-1337"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(1),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("YOYOYO"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(2),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("true"));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(3),
+    )};
+    assert_eq!(some_enum.node_step(runner), String::from("Used index 3 on a Quux (try a value between 0-2"));
+}
+
 // TODO: display tuple and struct enum details under valid values:
 // Probably use json equivilent of below
 //*   Foo

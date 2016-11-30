@@ -15,7 +15,7 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
                 let length = self.len();
                 match self.get_mut(index) {
                     Some (item) => item.node_step(runner),
-                    None      => return format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
+                    None        => return format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
                 }
             }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) } // TODO: yeah this should really be a command not a property
