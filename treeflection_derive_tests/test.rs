@@ -14,7 +14,7 @@ extern crate serde_json;
 
 use treeflection::{Node, NodeRunner, NodeToken};
 
-#[derive(Node, Serialize, Deserialize)]
+#[derive(Node, Serialize, Deserialize, Default)]
 struct Parent {
     pub foo: String,
     pub bar: u32,
@@ -23,7 +23,7 @@ struct Parent {
     private: i64,
 }
 
-#[derive(Node, Serialize, Deserialize)]
+#[derive(Node, Serialize, Deserialize, Default)]
 struct Child {
     pub qux: i32,
 }
@@ -136,14 +136,34 @@ fn int_child_property() {
 }
 
 #[test]
+fn default_struct() {
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetDefault) };
+    let mut parent = Parent::new();
+    assert_eq!(parent.node_step(runner), String::from(""));
+    assert_eq!(parent.foo, String::new());
+    assert_eq!(parent.bar, 0);
+    assert_eq!(parent.baz, false);
+    assert_eq!(parent.child.qux, 0);
+    assert_eq!(parent.private, 0);
+}
+
+#[test]
+fn variant_struct() {
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("something"))) };
+    let mut parent = Parent::new();
+    assert_eq!(parent.node_step(runner), String::from("Parent cannot \'SetVariant(\"something\")\'"));
+}
+
+#[test]
 fn help_struct() {
 let output = r#"
 Parent Help
 
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON
+*   help  - display this help
+*   get   - display JSON
+*   set   - set to JSON
+*   reset - reset to default values
 
 Accessors:
 *   foo - String
@@ -164,10 +184,22 @@ enum SomeEnum {
     Quux (i64, String, bool),
 }
 
+impl Default for SomeEnum {
+    fn default() -> SomeEnum {
+        SomeEnum::Foo
+    }
+}
+
 // test for unused variable warnings in generated code
 #[derive(Node, Serialize, Deserialize)]
 enum SimpleEnum {
     Foo,
+}
+
+impl Default for SimpleEnum {
+    fn default() -> SimpleEnum {
+        SimpleEnum::Foo
+    }
 }
 
 #[test]
@@ -369,8 +401,37 @@ fn index_tuple_enum() {
     assert_eq!(some_enum.node_step(runner), String::from("Used index 3 on a Quux (try a value between 0-2"));
 }
 
+#[test]
+fn variant_enum() {
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Foo"))) };
+    assert_eq!(some_enum.node_step(runner), String::from(""));
+    assert!(matches!(some_enum, SomeEnum::Foo));
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Baz"))) };
+    assert_eq!(some_enum.node_step(runner), String::from(""));
+    assert!(matches!(some_enum, SomeEnum::Baz { x: 0.0, y: 0.0 }));
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Qux"))) };
+    assert_eq!(some_enum.node_step(runner), String::from(""));
+    assert!(matches!(some_enum, SomeEnum::Qux (0)));
+
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("nonexistent"))) };
+    assert_eq!(some_enum.node_step(runner), String::from("SomeEnum does not have a variant 'nonexistent'"));
+    assert!(matches!(some_enum, SomeEnum::Bar));
+}
+
+#[test]
+fn default_enum() {
+    let mut some_enum = SomeEnum::Bar;
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetDefault) };
+    assert_eq!(some_enum.node_step(runner), String::from(""));
+    assert!(matches!(some_enum, SomeEnum::Foo));
+}
+
 // TODO: display tuple and struct enum details under valid values:
-// Probably use json equivilent of below
+// Probably use json equivalent of below
 //*   Foo
 //*   Bar
 //*   Baz {x: f32, y: f32}
@@ -389,9 +450,11 @@ Valid values:
 *   Quux
 
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON"#;
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   reset   - reset to default variant
+*   variant - set to the specified variant"#;
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
     assert_eq!(some_enum.node_step(runner), String::from(output));

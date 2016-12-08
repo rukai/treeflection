@@ -97,10 +97,12 @@ impl NodeRunner {
         if let NodeTokenProgress::Action = token_progress {
             let mut action = command[token_begin..].split_whitespace();
             tokens.push(match action.next() {
-                Some("help") => NodeToken::Help,
-                Some("edit") => NodeToken::Edit,
-                Some("get")  => NodeToken::Get,
-                Some("set")  => {
+                Some("help")      => NodeToken::Help,
+                Some("edit")      => NodeToken::Edit,
+                Some("copy")      => NodeToken::CopyFrom,
+                Some("paste")     => NodeToken::PasteTo,
+                Some("get")       => NodeToken::Get,
+                Some("set")    => {
                     // TODO: All groups of whitespace get converted into a single string. This could be an issue.
                     let mut set_value: Vec<&str> = vec!();
                     for token in action {
@@ -108,8 +110,36 @@ impl NodeRunner {
                     }
                     NodeToken::Set(set_value.join(" "))
                 }
-                Some("copy")  => NodeToken::CopyFrom,
-                Some("paste") => NodeToken::PasteTo,
+                Some("insert") => {
+                    match action.next() {
+                        Some(arg) => {
+                            match arg.parse() {
+                                Ok(index) => NodeToken::Insert(index),
+                                Err(_)    => return Err(String::from("Index must be an integer"))
+                            }
+                        }
+                        None => {
+                            NodeToken::Insert(0)
+                        }
+                    }
+                }
+                Some("remove") => {
+                    match action.next() {
+                        Some(arg) => {
+                            match arg.parse() {
+                                Ok(index) => NodeToken::Remove(index),
+                                Err(_)    => return Err(String::from("Index must be an integer"))
+                            }
+                        }
+                        None => {
+                            NodeToken::Remove(0)
+                        }
+                    }
+                }
+                Some("variant") => {
+                    NodeToken::SetVariant (action.next().unwrap().to_string())
+                }
+                Some("reset") => { NodeToken::SetDefault }
                 Some(&_)      => return Err (String::from("Action is invalid")), // TODO: Custom actions
                 None          => return Err (String::from("This should be unreachable: No Action"))
             });

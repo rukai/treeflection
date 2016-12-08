@@ -1,4 +1,5 @@
 #![feature(proc_macro, proc_macro_lib)]
+#![recursion_limit = "128"]
 
 #[macro_use] extern crate quote;
 
@@ -64,6 +65,11 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     let get_arm = gen_get(&name_string);
     let set_arm = gen_set(&name_string);
     let help_arm = gen_enum_help(&name_string, data);
+    let variant_arm = gen_variant(&name, data);
+    let default_arm = quote! {
+        *self = #name::default();
+        String::new()
+    };
 
     // this is required to avoid an unused variable warning from generated code
     let index_name = if check_using_index(data) {
@@ -82,6 +88,8 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
                     NodeToken::Get                      => { #get_arm }
                     NodeToken::Set (value)              => { #set_arm }
                     NodeToken::Help                     => { #help_arm }
+                    NodeToken::SetVariant (variant)     => { #variant_arm }
+                    NodeToken::SetDefault               => { #default_arm }
                     action                              => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
             }
@@ -96,6 +104,63 @@ fn check_using_index(data: &Vec<Variant>) -> bool {
         }
     }
     false
+}
+
+fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
+    let name_string = name.to_string();
+    let mut variant_arms: Vec<Tokens> = vec!();
+    for variant in data {
+        let variant_name = &variant.ident;
+        let variant_name_string = variant_name.to_string();
+        variant_arms.push(match &variant.data {
+            &VariantData::Struct (ref fields) => {
+                let mut field_values: Vec<Tokens> = vec!();
+                for field in fields {
+                    let field_name = field.ident.as_ref().unwrap();
+                    let ty = &field.ty;
+                    field_values.push(quote! {
+                        #field_name : #ty::default()
+                    });
+                }
+                quote! {
+                    #variant_name_string => {
+                        *self = #name::#variant_name { #( #field_values ),* };
+                        String::new()
+                    }
+                }
+            }
+            &VariantData::Tuple (ref fields) => {
+                let mut field_values: Vec<Tokens> = vec!();
+                for field in fields {
+                    let ty = &field.ty;
+                    field_values.push(quote! {
+                        #ty::default()
+                    });
+                }
+                quote! {
+                    #variant_name_string => {
+                        *self = #name::#variant_name ( #( #field_values ),* );
+                        String::new()
+                    }
+                }
+            }
+            &VariantData::Unit => {
+                quote! {
+                    #variant_name_string => {
+                        *self = #name::#variant_name;
+                        String::new()
+                    }
+                }
+            }
+        });
+    }
+
+    quote! {
+        match variant.as_str() {
+            #( #variant_arms )*
+            variant => format!("{} does not have a variant '{}'", #name_string, variant)
+        }
+    }
 }
 
 fn gen_enum_property(name: &Ident, data: &Vec<Variant>) -> Tokens {
@@ -209,6 +274,10 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
     let get_arm = gen_get(&name_string);
     let set_arm = gen_set(&name_string);
     let help_arm = gen_struct_help(&name_string, data);
+    let default_arm = quote! {
+        *self = #name::default();
+        String::new()
+    };
 
     quote! {
         impl Node for #name {
@@ -218,6 +287,7 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
                     NodeToken::Get                      => { #get_arm }
                     NodeToken::Set (value)              => { #set_arm }
                     NodeToken::Help                     => { #help_arm }
+                    NodeToken::SetDefault               => { #default_arm }
                     action                              => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
             }
@@ -240,7 +310,7 @@ fn gen_struct_property(name: &str, data: &VariantData) -> Tokens {
     quote! {
         match property.as_str() {
             #( #arms )*
-            prop  => format!("{} does not have a property '{}'", #name, prop)
+            prop => format!("{} does not have a property '{}'", #name, prop)
         }
     }
 }
@@ -250,9 +320,10 @@ fn gen_struct_help(name: &str, data: &VariantData) -> Tokens {
 {} Help
 
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON
+*   help  - display this help
+*   get   - display JSON
+*   set   - set to JSON
+*   reset - reset to default values
 
 Accessors:
 "#, name);
@@ -284,9 +355,11 @@ fn gen_enum_help(name: &str, data: &Vec<Variant>) -> Tokens {
 Valid values:
 {}
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON"#, name, valid_values);
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   reset   - reset to default variant
+*   variant - set to the specified variant"#, name, valid_values);
 
     quote!{
         String::from(#output)

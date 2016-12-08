@@ -12,14 +12,40 @@ fn assert_command(expected: Vec<NodeToken>, command: &str) {
 /* 
  * Actions
  */
-
 #[test]
-fn get() {
+fn insert_with_index() {
     let expected = vec!(
-        NodeToken::Get,
+        NodeToken::Insert(2),
         NodeToken::ChainProperty(String::from("foo")),
     );
-    assert_command(expected, "foo get");
+    assert_command(expected, "foo insert 2");
+}
+
+#[test]
+fn insert() {
+    let expected = vec!(
+        NodeToken::Insert(0),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo insert");
+}
+
+#[test]
+fn remove_with_index() {
+    let expected = vec!(
+        NodeToken::Remove(2),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo remove 2");
+}
+
+#[test]
+fn remove() {
+    let expected = vec!(
+        NodeToken::Remove(0),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo remove");
 }
 
 #[test]
@@ -29,6 +55,24 @@ fn set() {
         NodeToken::ChainProperty(String::from("foo")),
     );
     assert_command(expected, "foo set something");
+}
+
+#[test]
+fn variant() {
+    let expected = vec!(
+        NodeToken::SetVariant(String::from("variant_name")),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo variant variant_name and trash");
+}
+
+#[test]
+fn reset() {
+    let expected = vec!(
+        NodeToken::SetDefault,
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo reset");
 }
 
 #[test]

@@ -7,7 +7,7 @@ use ::node::Node;
 use ::node_runner::NodeRunner;
 use ::node_token::NodeToken;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ContextVec<T> {
     context: Vec<usize>,
     vector:  Vec<T>,
@@ -197,7 +197,7 @@ impl<T> DerefMut for ContextVec<T> {
     }
 }
 
-impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize {
+impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {
@@ -238,14 +238,29 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize {
                 }
                 combined
             }
+            NodeToken::Insert (index) => {
+                self.vector.insert(index, T::default());
+                String::new()
+            }
+            NodeToken::Remove (index) => {
+                self.vector.remove(index);
+                String::new()
+            }
+            NodeToken::SetDefault => {
+                self.vector = vec!();
+                String::new()
+            }
             NodeToken::Help => {
                 String::from(r#"
 Context Vector Help
 
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - create a new element
+*   remove  - remove an element
+*   default - reset to default values
 
 Accessors:
 *   [index] - access item at index

@@ -48,6 +48,70 @@ fn vec_chain_index() {
 }
 
 #[test]
+fn vec_insert() {
+    let mut some_vec = test_vec();
+
+    assert_eq!(some_vec.len(), 4);
+    assert_eq!(some_vec[0], 100000);
+    assert_eq!(some_vec[1], 13);
+    assert_eq!(some_vec[2], -358);
+    assert_eq!(some_vec[3], 42);
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(0)) };
+    assert_eq!("", some_vec.node_step(runner));
+    assert_eq!(some_vec.len(), 5);
+    assert_eq!(some_vec[0], 0);
+    assert_eq!(some_vec[1], 100000);
+    assert_eq!(some_vec[2], 13);
+    assert_eq!(some_vec[3], -358);
+    assert_eq!(some_vec[4], 42);
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(2)) };
+    assert_eq!("", some_vec.node_step(runner));
+    assert_eq!(some_vec.len(), 6);
+    assert_eq!(some_vec[0], 0);
+    assert_eq!(some_vec[1], 100000);
+    assert_eq!(some_vec[2], 0);
+    assert_eq!(some_vec[3], 13);
+    assert_eq!(some_vec[4], -358);
+    assert_eq!(some_vec[5], 42);
+}
+
+#[test]
+fn vec_remove() {
+    let mut some_vec = test_vec();
+
+    assert_eq!(some_vec.len(), 4);
+    assert_eq!(some_vec[0], 100000);
+    assert_eq!(some_vec[1], 13);
+    assert_eq!(some_vec[2], -358);
+    assert_eq!(some_vec[3], 42);
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(0)) };
+    assert_eq!("", some_vec.node_step(runner));
+    assert_eq!(some_vec.len(), 3);
+    assert_eq!(some_vec[0], 13);
+    assert_eq!(some_vec[1], -358);
+    assert_eq!(some_vec[2], 42);
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(2)) };
+    assert_eq!("", some_vec.node_step(runner));
+    assert_eq!(some_vec.len(), 2);
+    assert_eq!(some_vec[0], 13);
+    assert_eq!(some_vec[1], -358);
+}
+
+#[test]
+fn vec_reset() {
+    let mut some_vec = test_vec();
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetDefault) };
+
+    assert_eq!(4, some_vec.len());
+    some_vec.node_step(runner);
+    assert_eq!(0, some_vec.len());
+}
+
+#[test]
 fn vec_get() {
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
     assert_eq!("[\n  100000,\n  13,\n  -358,\n  42\n]", test_vec().node_step(runner));
@@ -79,9 +143,12 @@ fn vec_help()
 Vector Help
 
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - create a new element
+*   remove  - remove an element
+*   default - reset to default values
 
 Accessors:
 *   [index] - access item at index

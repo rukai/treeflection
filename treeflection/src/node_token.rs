@@ -8,7 +8,11 @@ pub enum NodeToken {
     Edit,
     Get,
     Set (String),
+    SetDefault,
+    SetVariant (String),
     CopyFrom,
     PasteTo,
+    Insert (usize),
+    Remove (usize),
     Custom (String),
 }

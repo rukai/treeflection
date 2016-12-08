@@ -8,7 +8,7 @@ pub trait Node {
     fn node_step(&mut self, runner: NodeRunner) -> String;
 }
 
-impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
+impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {
@@ -22,7 +22,7 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
             NodeToken::Get => {
                 serde_json::to_string_pretty(self).unwrap()
             }
-            NodeToken::Set(value) => {
+            NodeToken::Set (value) => {
                 match serde_json::from_str(&value) {
                     Ok(result) => {
                         *self = result;
@@ -33,14 +33,29 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize {
                     }
                 }
             }
+            NodeToken::Insert (index) => {
+                self.insert(index, T::default());
+                String::new()
+            }
+            NodeToken::Remove (index) => {
+                self.remove(index);
+                String::new()
+            }
+            NodeToken::SetDefault => {
+                *self = vec!();
+                String::new()
+            }
             NodeToken::Help => {
                 String::from(r#"
 Vector Help
 
 Commands:
-*   help - display this help
-*   get  - display JSON
-*   set  - set to JSON
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - create a new element
+*   remove  - remove an element
+*   default - reset to default values
 
 Accessors:
 *   [index] - access item at index
