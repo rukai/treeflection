@@ -137,7 +137,12 @@ impl NodeRunner {
                     }
                 }
                 Some("variant") => {
-                    NodeToken::SetVariant (action.next().unwrap().to_string())
+                    NodeToken::SetVariant (
+                        match action.next() {
+                            Some(value) => value.to_string(),
+                            None        => String::new()
+                        }
+                    )
                 }
                 Some("reset") => { NodeToken::SetDefault }
                 Some(&_)      => return Err (String::from("Action is invalid")), // TODO: Custom actions

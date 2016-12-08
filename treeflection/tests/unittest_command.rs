@@ -58,6 +58,15 @@ fn set() {
 }
 
 #[test]
+fn empty_variant() {
+    let expected = vec!(
+        NodeToken::SetVariant(String::new()),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo variant");
+}
+
+#[test]
 fn variant() {
     let expected = vec!(
         NodeToken::SetVariant(String::from("variant_name")),
