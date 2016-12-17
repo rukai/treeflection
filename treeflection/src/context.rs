@@ -204,7 +204,13 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default
                 let length = self.vector.len();
                 match self.vector.get_mut(index) {
                     Some (item) => item.node_step(runner),
-                    None        => return format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
+                    None => {
+                        return match length {
+                             0 => format!("Used index {} on an empty vector", index),
+                             1 => format!("Used index {} on a vector of size 1 (try 0)", index),
+                             _ => format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
+                        }
+                    }
                 }
             }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
@@ -239,12 +245,24 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default
                 combined
             }
             NodeToken::Insert (index) => {
-                self.vector.insert(index, T::default());
-                String::new()
+                let max_index = self.len();
+                if index > max_index {
+                    format!("Tried to insert at index {} on a vector of size {} (try a value between 0-{})", index, max_index, max_index)
+                }
+                else {
+                    self.insert(index, T::default());
+                    String::new()
+                }
             }
             NodeToken::Remove (index) => {
-                self.vector.remove(index);
-                String::new()
+                let max_index = self.len() - 1;
+                if index > max_index {
+                    format!("Tried to remove the value at index {} on a vector of size {} (try a value between 0-{})", index, self.len(), max_index)
+                }
+                else {
+                    self.remove(index);
+                    String::new()
+                }
             }
             NodeToken::SetDefault => {
                 self.vector = vec!();

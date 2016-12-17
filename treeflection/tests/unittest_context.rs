@@ -4,12 +4,20 @@ extern crate serde;
 
 use treeflection::{Node, NodeRunner, NodeToken, ContextVec};
 
-fn test_vec() -> ContextVec<i32> {
+fn test_vec4() -> ContextVec<i32> {
+    ContextVec::from_vec(vec!(100000, 13, -358, 42))
+}
+
+fn test_vec3() -> ContextVec<i32> {
     ContextVec::from_vec(vec!(10, 1337, 42))
 }
 
-fn test_vec4() -> ContextVec<i32> {
-    ContextVec::from_vec(vec!(100000, 13, -358, 42))
+fn test_vec1() -> ContextVec<i32> {
+    ContextVec::from_vec(vec!(13))
+}
+
+fn test_vec0() -> ContextVec<i32> {
+    ContextVec::from_vec(vec!())
 }
 
 #[test]
@@ -17,7 +25,7 @@ fn selection_first() {
     let context_vec = ContextVec::<i32>::new();
     assert!(matches!(context_vec.selection_first(), None));
 
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     assert!(matches!(context_vec.selection_first(), None));
 
     context_vec.set_context(0);
@@ -36,7 +44,7 @@ fn selection_first_mut() {
     let mut context_vec = ContextVec::<i32>::new();
     assert!(matches!(context_vec.selection_first_mut(), None));
 
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     assert!(matches!(context_vec.selection_first_mut(), None));
 
     context_vec.set_context(0);
@@ -60,7 +68,7 @@ fn selection() {
     let context_vec = ContextVec::<i32>::new();
     assert_eq!(context_vec.selection().len(), 0);
 
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     assert_eq!(context_vec.selection().len(), 0);
 
     context_vec.set_context(0);
@@ -80,7 +88,7 @@ fn selection() {
 
 #[test]
 fn clear_context() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context(0);
     context_vec.clear_context();
     assert_eq!(context_vec.get_context().len(), 0);
@@ -88,7 +96,7 @@ fn clear_context() {
 
 #[test]
 fn set_context() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
 
     context_vec.set_context(0);
     assert_eq!(context_vec.get_context().len(), 1);
@@ -110,13 +118,13 @@ fn set_context() {
 #[test]
 #[should_panic]
 fn set_context_out_of_bounds() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context(3);
 }
 
 #[test]
 fn set_context_vec() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
 
     context_vec.set_context_vec(vec!(1));
     assert_eq!(context_vec.get_context().len(), 1);
@@ -135,7 +143,7 @@ fn set_context_vec() {
 
 #[test]
 fn set_vec() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context(0);
     context_vec.set_vec(vec!(1, 99));
     assert_eq!(context_vec.get_context().len(), 0);
@@ -146,7 +154,7 @@ fn set_vec() {
 
 #[test]
 fn clear() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context(0);
     assert_eq!(context_vec.len(), 3);
     assert_eq!(context_vec.get_context().len(), 1);
@@ -157,7 +165,7 @@ fn clear() {
 
 #[test]
 fn push() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     assert_eq!(context_vec.len(), 3);
     context_vec.push(99);
     assert_eq!(context_vec.len(), 4);
@@ -166,7 +174,7 @@ fn push() {
 
 #[test]
 fn insert() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context_vec(vec!(0, 1, 2));
 
     assert_eq!(context_vec.get_context().len(), 3);
@@ -200,7 +208,7 @@ fn pop() {
     let mut context_vec = ContextVec::<bool>::new();
     assert!(matches!(context_vec.pop(), None));
 
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context_vec(vec!(1, 2));
 
     assert_eq!(context_vec.get_context().len(), 2);
@@ -212,14 +220,14 @@ fn pop() {
 
 #[test]
 fn remove() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.remove(2);
     assert_eq!(context_vec.len(), 2);
     assert_eq!(context_vec[0], 10);
     assert_eq!(context_vec[1], 1337);
     assert_eq!(context_vec.get_context().len(), 0);
 
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context(0);
     context_vec.remove(0);
     assert_eq!(context_vec.len(), 2);
@@ -228,7 +236,7 @@ fn remove() {
     let context = context_vec.get_context();
     assert_eq!(context.len(), 0);
 
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.set_context_vec(vec!(0, 1, 2));
     context_vec.remove(1);
     assert_eq!(context_vec.len(), 2);
@@ -243,13 +251,13 @@ fn remove() {
 #[test]
 #[should_panic]
 fn remove_out_of_bounds() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     context_vec.remove(3);
 }
 
 #[test]
 fn deref_coercion() {
-    let context_vec = test_vec();
+    let context_vec = test_vec3();
     assert_eq!(context_vec[0], 10);
     assert_eq!(context_vec[1], 1337);
     assert_eq!(context_vec[2], 42);
@@ -268,7 +276,7 @@ fn deref_coercion() {
 
 #[test]
 fn deref_mut_coercion() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     if let Some(x) = context_vec.first_mut() {
         *x = 4;
     }
@@ -278,7 +286,7 @@ fn deref_mut_coercion() {
 #[test]
 #[should_panic]
 fn index_out_of_bounds() {
-    let context_vec = test_vec();
+    let context_vec = test_vec3();
     context_vec[3];
 }
 
@@ -286,8 +294,30 @@ fn index_out_of_bounds() {
 // tests beggining with vec_ are the same as the tests used for impl Node for Vec
 
 #[test]
+fn help() {
+    let mut context_vec = test_vec3();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    let output = r#"
+Context Vector Help
+
+Commands:
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - create a new element
+*   remove  - remove an element
+*   default - reset to default values
+
+Accessors:
+*   [index] - access item at index
+*   [?]     - access items at current context
+*   .length - display number of items"#;
+    assert_eq!(context_vec.node_step(runner), String::from(output));
+}
+
+#[test]
 fn chain_context() {
-    let mut context_vec = test_vec();
+    let mut context_vec = test_vec3();
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainContext
@@ -312,31 +342,62 @@ fn chain_context() {
 }
 
 #[test]
-fn help() {
-    let mut context_vec = test_vec();
-    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
-    let output = r#"
-Context Vector Help
+fn vec_chain_index() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(0),
+    )};
+    assert_eq!("100000", test_vec4().node_step(runner));
 
-Commands:
-*   help    - display this help
-*   get     - display JSON
-*   set     - set to JSON
-*   insert  - create a new element
-*   remove  - remove an element
-*   default - reset to default values
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(1),
+    )};
+    assert_eq!("13", test_vec4().node_step(runner));
 
-Accessors:
-*   [index] - access item at index
-*   [?]     - access items at current context
-*   .length - display number of items"#;
-    assert_eq!(context_vec.node_step(runner), String::from(output));
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(2),
+    )};
+    assert_eq!("-358", test_vec4().node_step(runner));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(3),
+    )};
+    assert_eq!("42", test_vec4().node_step(runner));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(4),
+    )};
+    assert_eq!(test_vec4().node_step(runner), "Used index 4 on a vector of size 4 (try a value between 0-3)");
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(1),
+    )};
+    assert_eq!(test_vec1().node_step(runner), "Used index 1 on a vector of size 1 (try 0)");
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainIndex(0),
+    )};
+    assert_eq!(test_vec0().node_step(runner), "Used index 0 on an empty vector");
 }
 
 #[test]
 fn vec_insert() {
     let mut some_vec = test_vec4();
 
+    assert_eq!(some_vec.len(), 4);
+    assert_eq!(some_vec[0], 100000);
+    assert_eq!(some_vec[1], 13);
+    assert_eq!(some_vec[2], -358);
+    assert_eq!(some_vec[3], 42);
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(5)) };
+    assert_eq!(some_vec.node_step(runner), "Tried to insert at index 5 on a vector of size 4 (try a value between 0-4)");
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -367,6 +428,14 @@ fn vec_insert() {
 fn vec_remove() {
     let mut some_vec = test_vec4();
 
+    assert_eq!(some_vec.len(), 4);
+    assert_eq!(some_vec[0], 100000);
+    assert_eq!(some_vec[1], 13);
+    assert_eq!(some_vec[2], -358);
+    assert_eq!(some_vec[3], 42);
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(4)) };
+    assert_eq!(some_vec.node_step(runner), "Tried to remove the value at index 4 on a vector of size 4 (try a value between 0-3)");
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
