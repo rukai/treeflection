@@ -5,7 +5,13 @@ use std::fmt::Debug;
 
 fn assert_set<T>(mut node: T, set: &str, expected: T) where T: Node + Debug + PartialEq {
     let tokens = vec!(NodeToken::Set(String::from(set)));
-    node.node_step(NodeRunner { tokens: tokens });
+    assert_eq!(node.node_step(NodeRunner { tokens: tokens }), String::new());
+    assert_eq!(expected, node);
+}
+
+fn assert_set_output<T>(mut node: T, set: &str, expected: T, expected_output: &str) where T: Node + Debug + PartialEq {
+    let tokens = vec!(NodeToken::Set(String::from(set)));
+    assert_eq!(node.node_step(NodeRunner { tokens: tokens }), expected_output);
     assert_eq!(expected, node);
 }
 
@@ -34,6 +40,18 @@ fn int_set() {
     assert_set::<u32>(42, "13", 13);
     assert_set::<u16>(42, "13", 13);
     assert_set::<u8>(42, "13", 13);
+
+    assert_set_output::<isize>(42, "invalid", 42, "Invalid value for isize (needs to be: A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807)");
+    assert_set_output::<i64>(42, "invalid", 42, "Invalid value for i64 (needs to be: A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807)");
+    assert_set_output::<i32>(42, "invalid", 42, "Invalid value for i32 (needs to be: A number from –2,147,483,648 to 2,147,483,647)");
+    assert_set_output::<i16>(42, "invalid", 42, "Invalid value for i16 (needs to be: A number from –32,768 to –32,767)");
+    assert_set_output::<i8>(42, "invalid", 42, "Invalid value for i8 (needs to be: A number from -128 to 127)");
+
+    assert_set_output::<usize>(42, "invalid", 42, "Invalid value for usize (needs to be: A number from 0 to 18,446,744,073,709,551,615)");
+    assert_set_output::<u64>(42, "invalid", 42, "Invalid value for u64 (needs to be: A number from 0 to 18,446,744,073,709,551,615)");
+    assert_set_output::<u32>(42, "invalid", 42, "Invalid value for u32 (needs to be: A number from 0 to 4,294,967,295)");
+    assert_set_output::<u16>(42, "invalid", 42, "Invalid value for u16 (needs to be: A number from 0 to 65,535)");
+    assert_set_output::<u8>(42, "invalid", 42, "Invalid value for u8 (needs to be: A number from 0 to 255)");
 }
 
 #[test]
@@ -64,7 +82,7 @@ fn int_help() {
     let output = r#"
 u8 Help
 
-Valid values: Number from 0 to 255
+Valid values: A number from 0 to 255
 
 Commands:
 *   help - display this help
@@ -76,7 +94,7 @@ Commands:
     let output = r#"
 u16 Help
 
-Valid values: Number from 0 to 65,535
+Valid values: A number from 0 to 65,535
 
 Commands:
 *   help - display this help
@@ -88,7 +106,7 @@ Commands:
     let output = r#"
 u32 Help
 
-Valid values: Number from 0 to 4,294,967,295
+Valid values: A number from 0 to 4,294,967,295
 
 Commands:
 *   help - display this help
@@ -100,7 +118,7 @@ Commands:
     let output = r#"
 u64 Help
 
-Valid values: Number from 0 to 18,446,744,073,709,551,615
+Valid values: A number from 0 to 18,446,744,073,709,551,615
 
 Commands:
 *   help - display this help
@@ -112,7 +130,7 @@ Commands:
     let output = r#"
 i8 Help
 
-Valid values: Number from -128 to 127
+Valid values: A number from -128 to 127
 
 Commands:
 *   help - display this help
@@ -124,7 +142,7 @@ Commands:
     let output = r#"
 i16 Help
 
-Valid values: Number from –32,768 to –32,767
+Valid values: A number from –32,768 to –32,767
 
 Commands:
 *   help - display this help
@@ -136,7 +154,7 @@ Commands:
     let output = r#"
 i32 Help
 
-Valid values: Number from –2,147,483,648 to 2,147,483,647
+Valid values: A number from –2,147,483,648 to 2,147,483,647
 
 Commands:
 *   help - display this help
@@ -148,7 +166,7 @@ Commands:
     let output = r#"
 i64 Help
 
-Valid values: Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+Valid values: A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
 
 Commands:
 *   help - display this help
@@ -169,6 +187,9 @@ fn i64_copy_message() {
 fn float_set() {
     assert_set::<f32>(49992.12345, "3.141592653589793", 3.141592653589793);
     assert_set::<f64>(49992.12345, "3.141592653589793", 3.141592653589793);
+
+    assert_set_output::<f32>(49992.12345, "invalid", 49992.12345, "Invalid value for f32 (needs to be: A number with a decimal point)");
+    assert_set_output::<f64>(49992.12345, "invalid", 49992.12345, "Invalid value for f64 (needs to be: A higher precision number with a decimal point)");
 }
 
 #[test]

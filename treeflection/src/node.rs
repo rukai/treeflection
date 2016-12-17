@@ -196,7 +196,17 @@ macro_rules! int_node {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 match runner.step() {
                     NodeToken::Get         => { (*self).to_string() }
-                    NodeToken::Set (value) => { *self = value.parse().unwrap(); String::from("") }
+                    NodeToken::Set (value) => {
+                        match value.parse() {
+                            Ok (value) => {
+                                *self = value;
+                                String::from("")
+                            }
+                            Err(_) => {
+                                format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                            }
+                        }
+                    }
                     NodeToken::Help        => {
                         format!(r#"
 {} Help
@@ -218,16 +228,16 @@ Commands:
     }
 }
 
-int_node!(i64, "Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
-int_node!(u64, "Number from 0 to 18,446,744,073,709,551,615");
-int_node!(i32, "Number from –2,147,483,648 to 2,147,483,647");
-int_node!(u32, "Number from 0 to 4,294,967,295");
-int_node!(i16, "Number from –32,768 to –32,767");
-int_node!(u16, "Number from 0 to 65,535");
-int_node!(i8, "Number from -128 to 127");
-int_node!(u8, "Number from 0 to 255");
-int_node!(isize, "Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
-int_node!(usize, "Number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
+int_node!(i64, "A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
+int_node!(u64, "A number from 0 to 18,446,744,073,709,551,615");
+int_node!(i32, "A number from –2,147,483,648 to 2,147,483,647");
+int_node!(u32, "A number from 0 to 4,294,967,295");
+int_node!(i16, "A number from –32,768 to –32,767");
+int_node!(u16, "A number from 0 to 65,535");
+int_node!(i8, "A number from -128 to 127");
+int_node!(u8, "A number from 0 to 255");
+int_node!(isize, "A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
+int_node!(usize, "A number from 0 to 18,446,744,073,709,551,615");
 
 // TODO: Not sure how to best present possible values for the floats
 int_node!(f32, "A number with a decimal point");
