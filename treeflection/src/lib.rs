@@ -1,3 +1,5 @@
+#![feature(drop_types_in_const)]
+
 extern crate serde;
 extern crate serde_json;
 

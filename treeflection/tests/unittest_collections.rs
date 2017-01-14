@@ -184,7 +184,7 @@ Commands:
 *   set     - set to JSON
 *   insert  - create a new element
 *   remove  - remove an element
-*   default - reset to default values
+*   default - reset to empty vector
 
 Accessors:
 *   [index] - access item at index

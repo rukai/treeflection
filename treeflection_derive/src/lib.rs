@@ -1,6 +1,4 @@
-#![feature(proc_macro, proc_macro_lib)]
 #![recursion_limit = "128"]
-
 #[macro_use] extern crate quote;
 
 extern crate syn;
@@ -20,12 +18,31 @@ pub fn treeflection_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input(&input).unwrap();
     let name = &ast.ident;
 
-    let quote_tokens = match ast.body {
+    let impl_for = match ast.body {
         Body::Enum(ref data)   => gen_enum(name, data),
         Body::Struct(ref data) => gen_struct(name, data)
-    }.to_string();
+    };
+    let copy_var = gen_copy_var(name);
+
+    let quote_tokens = quote! {
+        #impl_for
+        #copy_var
+    };
 
     quote_tokens.to_string().parse().unwrap()
+}
+
+fn copy_var_name(name: &str) -> Ident {
+    let mut var_name = name.to_uppercase();
+    var_name.push_str("_COPY");
+    Ident::from(var_name)
+}
+
+fn gen_copy_var(name: &Ident) -> Tokens {
+    let var_name = copy_var_name(name.as_ref());
+    quote! {
+        static mut #var_name: Option<#name> = None;
+    }
 }
 
 fn gen_get(name: &str) -> Tokens {
@@ -57,6 +74,33 @@ fn gen_set(name: &str) -> Tokens {
     }
 }
 
+fn gen_copy(name: &str) -> Tokens {
+    let var_name = copy_var_name(name);
+    quote! {
+        let copy = Some(self.clone());
+        unsafe {
+            #var_name = copy;
+        }
+        String::new()
+    }
+}
+
+fn gen_paste(name: &str) -> Tokens {
+    let var_name = copy_var_name(name);
+    quote! {
+        let paste = unsafe { #var_name.clone() };
+        match paste {
+            Some (value) => {
+                *self = value;
+                String::new()
+            }
+            None => {
+                format!("{} has not been copied", #name)
+            }
+        }
+    }
+}
+
 fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     let name_string = name.to_string();
 
@@ -64,6 +108,8 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     let index_arm = gen_enum_index(&name, data);
     let get_arm = gen_get(&name_string);
     let set_arm = gen_set(&name_string);
+    let copy_arm = gen_copy(&name_string);
+    let paste_arm = gen_paste(&name_string);
     let help_arm = gen_enum_help(&name_string, data);
     let variant_arm = gen_variant(&name, data);
     let default_arm = quote! {
@@ -87,6 +133,8 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
                     NodeToken::ChainIndex (#index_name) => { #index_arm }
                     NodeToken::Get                      => { #get_arm }
                     NodeToken::Set (value)              => { #set_arm }
+                    NodeToken::CopyFrom                 => { #copy_arm }
+                    NodeToken::PasteTo                  => { #paste_arm }
                     NodeToken::Help                     => { #help_arm }
                     NodeToken::SetVariant (variant)     => { #variant_arm }
                     NodeToken::SetDefault               => { #default_arm }
@@ -273,6 +321,8 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
     let property_arm = gen_struct_property(&name_string, data);
     let get_arm = gen_get(&name_string);
     let set_arm = gen_set(&name_string);
+    let copy_arm = gen_copy(&name_string);
+    let paste_arm = gen_paste(&name_string);
     let help_arm = gen_struct_help(&name_string, data);
     let default_arm = quote! {
         *self = #name::default();
@@ -286,6 +336,8 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
                     NodeToken::ChainProperty (property) => { #property_arm }
                     NodeToken::Get                      => { #get_arm }
                     NodeToken::Set (value)              => { #set_arm }
+                    NodeToken::CopyFrom                 => { #copy_arm }
+                    NodeToken::PasteTo                  => { #paste_arm }
                     NodeToken::Help                     => { #help_arm }
                     NodeToken::SetDefault               => { #default_arm }
                     action                              => { format!("{} cannot '{:?}'", #name_string, action) }
@@ -323,6 +375,8 @@ Commands:
 *   help  - display this help
 *   get   - display JSON
 *   set   - set to JSON
+*   copy  - copy the values from this struct
+*   paste - paste the copied values to this struct
 *   reset - reset to default values
 
 Accessors:
@@ -358,6 +412,8 @@ Commands:
 *   help    - display this help
 *   get     - display JSON
 *   set     - set to JSON
+*   copy    - copy the values from this enum
+*   paste   - paste the copied values to this enum
 *   reset   - reset to default variant
 *   variant - set to the specified variant"#, name, valid_values);
 

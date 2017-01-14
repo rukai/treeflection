@@ -76,6 +76,51 @@ fn int_get() {
 }
 
 #[test]
+fn copy_from_int() {
+    let copy_token = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
+
+    let mut a: u8 = 250;
+    let mut b: i8 = 13;
+    let mut c: u8 = 13;
+    let mut d: i64 = 13;
+    let mut e: f32 = 13.0;
+
+    assert_eq!(a.node_step(copy_token.clone()), "");
+    assert_eq!(a, 250);
+    assert_eq!(b.node_step(paste_token.clone()), "");
+    assert_eq!(b, -6); // sadly it is too complicated to properly error on this case
+    assert_eq!(c.node_step(paste_token.clone()), "");
+    assert_eq!(c, 250);
+    assert_eq!(d.node_step(paste_token.clone()), "");
+    assert_eq!(c, 250);
+    assert_eq!(e.node_step(paste_token.clone()), "");
+    assert_eq!(e, 250.0);
+}
+
+#[test]
+fn copy_from_float() {
+    let copy_token = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
+
+    let mut a: f64 = 13.37;
+    let mut b: f32 = 99.9999;
+    let mut c: i32 = 0;
+
+    assert_eq!(b.node_step(copy_token.clone()), "");
+    assert_eq!(b, 99.9999);
+    assert_eq!(c.node_step(paste_token.clone()), "");
+    assert_eq!(c, 99);
+
+    assert_eq!(a.node_step(copy_token.clone()), "");
+    assert_eq!(a, 13.37);
+    assert_eq!(b.node_step(paste_token.clone()), "");
+    assert_eq!(b, 13.37);
+    assert_eq!(c.node_step(paste_token.clone()), "");
+    assert_eq!(c, 13);
+}
+
+#[test]
 fn int_help() {
     let runner = NodeRunner { tokens: vec!( NodeToken::Help ) };
 
@@ -85,9 +130,11 @@ u8 Help
 Valid values: A number from 0 to 255
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: u8 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -97,9 +144,11 @@ u16 Help
 Valid values: A number from 0 to 65,535
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: u16 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -109,9 +158,11 @@ u32 Help
 Valid values: A number from 0 to 4,294,967,295
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: u32 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -121,9 +172,11 @@ u64 Help
 Valid values: A number from 0 to 18,446,744,073,709,551,615
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: u64 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -133,9 +186,11 @@ i8 Help
 Valid values: A number from -128 to 127
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: i8 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -145,9 +200,11 @@ i16 Help
 Valid values: A number from –32,768 to –32,767
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: i16 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -157,9 +214,11 @@ i32 Help
 Valid values: A number from –2,147,483,648 to 2,147,483,647
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: i32 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -169,18 +228,13 @@ i64 Help
 Valid values: A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: i64 = 13;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
-}
-
-#[test]
-fn i64_copy_message() {
-    let mut node: i64 = 5;
-    let tokens = vec!(NodeToken::CopyFrom);
-    assert_eq!("i64 cannot 'CopyFrom'", node.node_step(NodeRunner { tokens: tokens }));
 }
 
 #[test]
@@ -208,9 +262,11 @@ f32 Help
 Valid values: A number with a decimal point
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: f32 = 13.37;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 
@@ -220,9 +276,11 @@ f64 Help
 Valid values: A higher precision number with a decimal point
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value: f64 = 13.37;
     assert_eq!(value.node_step(runner.clone()).as_str(), output);
 }
@@ -235,6 +293,20 @@ fn string_set() {
 #[test]
 fn string_get() {
     assert_get::<String>(String::from("foobar"), "foobar");
+}
+
+#[test]
+fn string_copy_paste() {
+    let copy_token = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
+
+    let mut a = String::from("copied value");
+    let mut b = String::new();
+
+    assert_eq!(a.node_step(copy_token), "");
+    assert_eq!(a, String::from("copied value"));
+    assert_eq!(b.node_step(paste_token), "");
+    assert_eq!(b, String::from("copied value"));
 }
 
 #[test]

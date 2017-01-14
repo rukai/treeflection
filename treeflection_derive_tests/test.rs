@@ -2,7 +2,7 @@
 // while tests folder does not work with macros 1.1 https://github.com/rust-lang/rust/issues/37480
 // alternatively we could move the other tests into this crate
 
-#![feature(proc_macro)]
+#![feature(drop_types_in_const)]
 
 extern crate treeflection;
 #[macro_use] extern crate treeflection_derive;
@@ -14,7 +14,7 @@ extern crate serde_json;
 
 use treeflection::{Node, NodeRunner, NodeToken};
 
-#[derive(Node, Serialize, Deserialize, Default)]
+#[derive(Node, Serialize, Deserialize, Default, Clone)]
 struct Parent {
     pub foo: String,
     pub bar: u32,
@@ -23,7 +23,7 @@ struct Parent {
     private: i64,
 }
 
-#[derive(Node, Serialize, Deserialize, Default)]
+#[derive(Node, Serialize, Deserialize, Default, Clone)]
 struct Child {
     pub qux: i32,
 }
@@ -38,6 +38,18 @@ impl Parent {
                 qux: -13,
             },
             private: 1337,
+        }
+    }
+
+    fn empty() -> Parent {
+        Parent {
+            foo: String::new(),
+            bar: 0,
+            baz: false,
+            child: Child {
+                qux: 0,
+            },
+            private: 0,
         }
     }
 }
@@ -72,12 +84,6 @@ fn set_struct() {
     assert_eq!(parent.baz, true);
     assert_eq!(parent.child.qux, 1337);
     assert_eq!(parent.private, -1);
-}
-
-#[test]
-fn copy_struct() {
-    let runner = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
-    assert_eq!(Parent::new().node_step(runner), String::from("Parent cannot 'CopyFrom'"));
 }
 
 #[test]
@@ -155,14 +161,35 @@ fn variant_struct() {
 }
 
 #[test]
+fn copy_paste_struct() {
+    let copy_token  = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
+
+    let mut a = Parent::new();
+    let mut b = Parent::empty();
+
+    assert_eq!(a.node_step(copy_token), "");
+    assert_eq!(a.bar, 42);
+    assert_eq!(a.child.qux, -13);
+
+    assert_eq!(b.bar, 0);
+    assert_eq!(b.child.qux, 0);
+    assert_eq!(b.node_step(paste_token), "");
+    assert_eq!(b.bar, 42);
+    assert_eq!(a.child.qux, -13);
+}
+
+#[test]
 fn help_struct() {
-let output = r#"
+    let output = r#"
 Parent Help
 
 Commands:
 *   help  - display this help
 *   get   - display JSON
 *   set   - set to JSON
+*   copy  - copy the values from this struct
+*   paste - paste the copied values to this struct
 *   reset - reset to default values
 
 Accessors:
@@ -175,7 +202,7 @@ Accessors:
     assert_eq!(parent.node_step(runner), String::from(output));
 }
 
-#[derive(Node, Serialize, Deserialize)]
+#[derive(Node, Serialize, Deserialize, Clone)]
 enum SomeEnum {
     Foo,
     Bar,
@@ -191,7 +218,7 @@ impl Default for SomeEnum {
 }
 
 // test for unused variable warnings in generated code
-#[derive(Node, Serialize, Deserialize)]
+#[derive(Node, Serialize, Deserialize, Clone)]
 enum SimpleEnum {
     Foo,
 }
@@ -298,13 +325,6 @@ fn set_struct_enum() {
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from(r#"{"Baz":{"x":1337.1337,"y":42.13}}"#))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
     assert!(matches!(some_enum, SomeEnum::Baz {x: 1337.1337, y: 42.13}));
-}
-
-#[test]
-fn copy_enum() {
-    let mut some_enum = SomeEnum::Foo;
-    let runner = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
-    assert_eq!(some_enum.node_step(runner), String::from("SomeEnum cannot 'CopyFrom'"));
 }
 
 #[test]
@@ -430,6 +450,21 @@ fn default_enum() {
     assert!(matches!(some_enum, SomeEnum::Foo));
 }
 
+#[test]
+fn copy_paste_enum() {
+    let copy_token  = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
+    let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
+
+    let mut a = SomeEnum::Qux (13);
+    let mut b = SomeEnum::Foo;
+
+    assert_eq!(a.node_step(copy_token), "");
+    assert!(matches!(a, SomeEnum::Qux (13)));
+
+    assert_eq!(b.node_step(paste_token), "");
+    assert!(matches!(b, SomeEnum::Qux (13)));
+}
+
 // TODO: display tuple and struct enum details under valid values:
 // Probably use json equivalent of below
 //*   Foo
@@ -453,6 +488,8 @@ Commands:
 *   help    - display this help
 *   get     - display JSON
 *   set     - set to JSON
+*   copy    - copy the values from this enum
+*   paste   - paste the copied values to this enum
 *   reset   - reset to default variant
 *   variant - set to the specified variant"#;
     let mut some_enum = SomeEnum::Foo;

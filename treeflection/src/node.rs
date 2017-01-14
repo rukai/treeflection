@@ -73,7 +73,7 @@ Commands:
 *   set     - set to JSON
 *   insert  - create a new element
 *   remove  - remove an element
-*   default - reset to default values
+*   default - reset to empty vector
 
 Accessors:
 *   [index] - access item at index
@@ -164,7 +164,7 @@ Commands:
 *   get  - display value
 *   set  - set to value"#)
             }
-            action                 => { format!("bool cannot '{:?}'", action) }
+            action => { format!("bool cannot '{:?}'", action) }
         }
     }
 }
@@ -174,6 +174,25 @@ impl Node for String {
         match runner.step() {
             NodeToken::Get         => { (*self).clone() }
             NodeToken::Set (value) => { *self = value; String::from("") }
+            NodeToken::CopyFrom => {
+                let copy = Some (self.clone());
+                unsafe {
+                    STRING_COPY = copy;
+                }
+                String::new()
+            }
+            NodeToken::PasteTo => {
+                let paste = unsafe { STRING_COPY.clone() };
+                match paste {
+                    Some (value) => {
+                        *self = value;
+                        String::new()
+                    }
+                    None => {
+                        String::from("String has not been copied")
+                    }
+                }
+            }
             NodeToken::Help        => {
                 String::from(r#"
 String Help
@@ -185,17 +204,19 @@ Commands:
 *   get  - display value
 *   set  - set to value"#)
             }
-            action                 => { format!("String cannot '{:?}'", action) }
+            action => { format!("String cannot '{:?}'", action) }
         }
     }
 }
+
+static mut STRING_COPY: Option<String> = None;
 
 macro_rules! int_node {
     ($e:ty, $valid_values:tt) => {
         impl Node for $e {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 match runner.step() {
-                    NodeToken::Get         => { (*self).to_string() }
+                    NodeToken::Get => { (*self).to_string() }
                     NodeToken::Set (value) => {
                         match value.parse() {
                             Ok (value) => {
@@ -207,26 +228,63 @@ macro_rules! int_node {
                             }
                         }
                     }
-                    NodeToken::Help        => {
+                    NodeToken::Help => {
                         format!(r#"
 {} Help
 
 Valid values: {}
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#,
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#,
                             stringify! { $e },
                             $valid_values
                         )
                     }
-                    action                 => { format!("{} cannot '{:?}'", stringify! { $e }, action) }
+                    NodeToken::CopyFrom => {
+                        let num_copy = match stringify! { $e } {
+                            "f32" | "f64" => NumStore::Float (*self as f64),
+                            _             => NumStore::Int   (*self as u64)
+                        };
+                        unsafe {
+                            NUM_COPY = num_copy;
+                        }
+                        String::from("")
+                    }
+                    NodeToken::PasteTo => {
+                        let num_copy = unsafe { NUM_COPY.clone() };
+                        match num_copy {
+                            NumStore::Int (value) => {
+                                *self = value as $e;
+                                String::from("")
+                            }
+                            NumStore::Float (value) => {
+                                *self = value as $e;
+                                String::from("")
+                            }
+                            NumStore::None => {
+                                String::from("A number has not been copied")
+                            }
+                        }
+                    }
+                    action => { format!("{} cannot '{:?}'", stringify! { $e }, action) }
                 }
             }
         }
     }
 }
+
+#[derive(Clone)]
+enum NumStore {
+    Int   (u64),
+    Float (f64),
+    None,
+}
+
+static mut NUM_COPY: NumStore = NumStore::None;
 
 int_node!(i64, "A number from –9,223,372,036,854,775,808 to 9,223,372,036,854,775,807");
 int_node!(u64, "A number from 0 to 18,446,744,073,709,551,615");
