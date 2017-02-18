@@ -291,13 +291,13 @@ Accessors:
 }
 
 impl<T> Serialize for ContextVec<T> where T: Serialize {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         self.vector.serialize(serializer)
     }
 }
 
 impl<T> Deserialize for ContextVec<T> where T: Deserialize {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error> where D: Deserializer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
         Ok(ContextVec {
             context: vec!(),
             vector: Vec::<T>::deserialize(deserializer)?,

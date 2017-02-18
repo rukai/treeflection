@@ -260,7 +260,7 @@ fn tuple_set() {
 fn tuple_set_fail() {
     let mut some_tuple = test_tuple();
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("[1, 2]"))) };
-    assert_eq!(some_tuple.node_step(runner), String::from("( T0 , T1 , ) set error: invalid type: u64 at line 1 column 5"));
+    assert_eq!(some_tuple.node_step(runner), String::from("( T0 , T1 , ) set error: invalid type: integer `2`, expected a boolean at line 1 column 5"));
     assert_eq!(some_tuple.0, 42);
     assert_eq!(some_tuple.1, true);
 }

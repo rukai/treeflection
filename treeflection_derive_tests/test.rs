@@ -264,7 +264,7 @@ fn set_unit_enum() {
 
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("\"Aether\"")) )};
-    assert_eq!(some_enum.node_step(runner), "SomeEnum set Error: unknown variant \"Aether\" at line 1 column 8");
+    assert_eq!(some_enum.node_step(runner), "SomeEnum set Error: unknown variant `Aether`, expected one of `Foo`, `Bar`, `Baz`, `Qux`, `Quux` at line 1 column 8");
     assert!(matches!(some_enum, SomeEnum::Foo));
 }
 
