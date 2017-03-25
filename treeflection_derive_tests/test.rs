@@ -209,6 +209,8 @@ enum SomeEnum {
     Baz {x: f32, y: f32},
     Qux (u8),
     Quux (i64, String, bool),
+    GenericInTuple (Vec<usize>),
+    GenericInStruct {generic: Vec<usize>},
 }
 
 impl Default for SomeEnum {
@@ -264,7 +266,7 @@ fn set_unit_enum() {
 
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("\"Aether\"")) )};
-    assert_eq!(some_enum.node_step(runner), "SomeEnum set Error: unknown variant `Aether`, expected one of `Foo`, `Bar`, `Baz`, `Qux`, `Quux` at line 1 column 8");
+    assert_eq!(some_enum.node_step(runner), "SomeEnum set Error: unknown variant `Aether`, expected one of `Foo`, `Bar`, `Baz`, `Qux`, `Quux`, `GenericInTuple`, `GenericInStruct` at line 1 column 8");
     assert!(matches!(some_enum, SomeEnum::Foo));
 }
 
@@ -483,6 +485,8 @@ Valid values:
 *   Baz
 *   Qux
 *   Quux
+*   GenericInTuple
+*   GenericInStruct
 
 Commands:
 *   help    - display this help

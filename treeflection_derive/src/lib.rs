@@ -164,7 +164,7 @@ fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
                 let mut field_values: Vec<Tokens> = vec!();
                 for field in fields {
                     let field_name = field.ident.as_ref().unwrap();
-                    let ty = &field.ty;
+                    let ty = turbofish(&field.ty);
                     field_values.push(quote! {
                         #field_name : #ty::default()
                     });
@@ -179,7 +179,7 @@ fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
             &VariantData::Tuple (ref fields) => {
                 let mut field_values: Vec<Tokens> = vec!();
                 for field in fields {
-                    let ty = &field.ty;
+                    let ty = turbofish(&field.ty);
                     field_values.push(quote! {
                         #ty::default()
                     });
@@ -208,6 +208,17 @@ fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
             variant => format!("{} does not have a variant '{}'", #name_string, variant)
         }
     }
+}
+
+/// If the passed type is generic then it becomes turbofished
+fn turbofish(ty: &Ty) -> Ty {
+    let mut ty_string = quote! { #ty }.to_string();
+
+    if let Some(i) = ty_string.find("<") {
+        ty_string.insert_str(i, "::");
+    }
+
+    syn::parse_type(&ty_string).unwrap()
 }
 
 fn gen_enum_property(name: &Ident, data: &Vec<Variant>) -> Tokens {
