@@ -172,7 +172,7 @@ Commands:
 impl Node for String {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
-            NodeToken::Get         => { (*self).clone() }
+            NodeToken::Get => { (*self).clone() }
             NodeToken::Set (value) => { *self = value; String::from("") }
             NodeToken::CopyFrom => {
                 let copy = Some (self.clone());
@@ -193,16 +193,18 @@ impl Node for String {
                     }
                 }
             }
-            NodeToken::Help        => {
+            NodeToken::Help => {
                 String::from(r#"
 String Help
 
 Valid values: Anything
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#)
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#)
             }
             action => { format!("String cannot '{:?}'", action) }
         }
@@ -210,6 +212,63 @@ Commands:
 }
 
 static mut STRING_COPY: Option<String> = None;
+
+impl<T> Node for Option<T> where T: Node + Serialize + Deserialize + Default {
+    fn node_step(&mut self, mut runner: NodeRunner) -> String {
+        match runner.step() {
+            NodeToken::ChainProperty (ref s) if s == "value" => {
+                if let &mut Some(ref mut value) = self {
+                    value.node_step(runner)
+                }
+                else {
+                    String::from("Option contains no value")
+                }
+            }
+            NodeToken::Get => {
+                serde_json::to_string_pretty(self).unwrap()
+            }
+            NodeToken::Set (value) => {
+                match serde_json::from_str(&value) {
+                    Ok(result) => {
+                        *self = result;
+                        String::from("")
+                    }
+                    Err(err) => {
+                        format!("Option set error: {}", err)
+                    }
+                }
+            }
+            NodeToken::Insert (_) => {
+                *self = Some(T::default());
+                String::new()
+            }
+            NodeToken::Remove (_) => {
+                *self = None;
+                String::new()
+            }
+            NodeToken::SetDefault => {
+                *self = None;
+                String::new()
+            }
+            NodeToken::Help => {
+                String::from(r#"
+Option Help
+
+Commands:
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - set to a value
+*   remove  - remove value
+*   default - remove value
+
+Accessors:
+*   .value - the stored value number of items"#)
+            }
+            action => { format!("String cannot '{:?}'", action) }
+        }
+    }
+}
 
 macro_rules! int_node {
     ($e:ty, $valid_values:tt) => {

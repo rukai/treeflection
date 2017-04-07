@@ -165,16 +165,14 @@ fn vec_set() {
 }
 
 #[test]
-fn vec_set_fail()
-{
+fn vec_set_fail() {
     let mut some_vec = test_vec4();
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("[1, lol]"))) };
     assert_eq!(some_vec.node_step(runner), String::from("vector set error: expected value at line 1 column 5"));
 }
 
 #[test]
-fn vec_help()
-{
+fn vec_help() {
     let output = r#"
 Vector Help
 
@@ -280,4 +278,107 @@ Accessors:
     let mut some_tuple = test_tuple();
     let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
     assert_eq!(some_tuple.node_step(runner), String::from(output));
+}
+
+#[test]
+fn option_help() {
+    let output = r#"
+Option Help
+
+Commands:
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - set to a value
+*   remove  - remove value
+*   default - remove value
+
+Accessors:
+*   .value - the stored value number of items"#;
+
+    let mut some_option: Option<usize> = None;
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    assert_eq!(some_option.node_step(runner), String::from(output));
+}
+
+#[test]
+fn option_get() {
+    let mut some_option: Option<usize> = None;
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
+    assert_eq!("null", some_option.node_step(runner));
+
+    some_option = Some(1337);
+    let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
+    assert_eq!("1337", some_option.node_step(runner));
+}
+
+#[test]
+fn option_set() {
+    let mut some_option: Option<usize> = Some(358);
+    let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("null"))) };
+    assert_eq!(some_option.node_step(runner), String::from(""));
+    assert!(some_option.is_none());
+
+    let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("42"))) };
+    assert_eq!(some_option.node_step(runner), String::from(""));
+    assert_eq!(42, some_option.unwrap());
+}
+
+#[test]
+fn option_set_fail() {
+    let mut some_option: Option<usize> = Some(358);
+    let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("None"))) };
+    assert_eq!(some_option.node_step(runner), String::from("Option set error: expected value at line 1 column 1"));
+    if let Some(value) = some_option {
+        assert_eq!(358, value);
+    }
+    else {
+        assert!(false);
+    }
+}
+
+#[test]
+fn option_insert() {
+    let mut some_option: Option<usize> = None;
+    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(9)) };
+    assert_eq!(some_option.node_step(runner), String::from(""));
+    if let Some(value) = some_option {
+        assert_eq!(0, value);
+    }
+    else {
+        assert!(false);
+    }
+}
+
+#[test]
+fn option_remove() {
+    let mut some_option: Option<usize> = Some(358);
+    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(42)) };
+    assert_eq!(some_option.node_step(runner), String::from(""));
+    assert!(some_option.is_none());
+}
+
+#[test]
+fn option_default() {
+    let mut some_option: Option<usize> = Some(358);
+    let runner = NodeRunner { tokens: vec!(NodeToken::SetDefault) };
+    assert_eq!(some_option.node_step(runner), String::from(""));
+    assert!(some_option.is_none());
+}
+
+#[test]
+fn option_value() {
+    let mut some_option: Option<usize> = Some(42);
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("value")),
+    )};
+    assert_eq!("42", some_option.node_step(runner));
+
+    some_option = None;
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainProperty(String::from("value")),
+    )};
+    assert_eq!("Option contains no value", some_option.node_step(runner));
 }

@@ -317,9 +317,11 @@ String Help
 Valid values: Anything
 
 Commands:
-*   help - display this help
-*   get  - display value
-*   set  - set to value"#;
+*   help  - display this help
+*   copy  - copy this value
+*   paste - paste the copied value here
+*   get   - display value
+*   set   - set to value"#;
     let mut value = String::from("YO");
     let runner = NodeRunner { tokens: vec!( NodeToken::Help ) };
     assert_eq!(value.node_step(runner).as_str(), output);
