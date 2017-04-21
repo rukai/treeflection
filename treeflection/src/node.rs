@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Serialize, Deserialize};
 use serde_json;
 
@@ -82,6 +84,91 @@ Accessors:
             action => { format!("vector cannot '{:?}'", action) }
         }
     }
+}
+
+impl<T> Node for HashMap<String, T> where T: Node + Serialize + Deserialize + Default {
+    fn node_step(&mut self, mut runner: NodeRunner) -> String {
+        match runner.step() {
+            NodeToken::ChainKey (key) => {
+                let length = self.len();
+                match self.get_mut(&key) {
+                    Some (item) => { return item.node_step(runner) }
+                    None        => { }
+                }
+                match length {
+                     0 => {
+                        format!("Used key '{}' on an empty map.", key)
+                     }
+                     _ => {
+                        format!("Used key '{}' on a map that does not contain it. Try one of: {}", key, format_keys(self))
+                    }
+                }
+            }
+            NodeToken::GetKeys => {
+                format!("Keys: {}", format_keys(self))
+            }
+            NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) } // TODO: yeah this should really be a command not a property
+            NodeToken::Get => {
+                serde_json::to_string_pretty(self).unwrap()
+            }
+            NodeToken::Set (value) => {
+                match serde_json::from_str(&value) {
+                    Ok(result) => {
+                        *self = result;
+                        String::from("")
+                    }
+                    Err(err) => {
+                        format!("map set error: {}", err)
+                    }
+                }
+            }
+            NodeToken::InsertKey (key) => {
+                if self.contains_key(&key) {
+                    format!("Tried to insert key '{}' on a map that already contains it. Current keys: {}", key, format_keys(self))
+                }
+                else {
+                    self.insert(key, T::default());
+                    String::new()
+                }
+            }
+            NodeToken::RemoveKey (key) => {
+                if let None = self.remove(&key) {
+                    format!("Tried to remove key '{}' on a map that doesnt contain it. Current keys: {}", key, format_keys(self))
+                }
+                else {
+                    String::new()
+                }
+            }
+            NodeToken::SetDefault => {
+                *self = HashMap::new();
+                String::new()
+            }
+            NodeToken::Help => {
+                String::from(r#"
+Map Help
+
+Commands:
+*   help    - display this help
+*   keys    - display the keys
+*   get     - display JSON
+*   set     - set to JSON
+*   insert  - create a new element
+*   remove  - remove an element
+*   default - reset to empty map
+
+Accessors:
+*   [key]   - access item at the string key
+*   .length - display number of items"#)
+            }
+            action => { format!("map cannot '{:?}'", action) }
+        }
+    }
+}
+
+fn format_keys<T>(map: &HashMap<String, T>) -> String {
+    let mut key_list: Vec<String> = map.keys().map(|x| format!("'{}'", x)).collect();
+    key_list.sort();
+    key_list.join(", ")
 }
 
 macro_rules! tuple_node {

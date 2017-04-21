@@ -14,5 +14,8 @@ pub enum NodeToken {
     PasteTo,
     Insert (usize),
     Remove (usize),
+    GetKeys,
+    InsertKey (String),
+    RemoveKey (String),
     Custom (String),
 }

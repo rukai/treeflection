@@ -138,7 +138,7 @@ fn vec_remove() {
 }
 
 #[test]
-fn vec_reset() {
+fn vec_default() {
     let mut some_vec = test_vec4();
     let runner = NodeRunner { tokens: vec!(NodeToken::SetDefault) };
 

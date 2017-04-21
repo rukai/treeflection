@@ -144,7 +144,7 @@ fn chain_index() {
 }
 
 #[test]
-fn chain_context() {
+fn chain_key() {
     let expected = vec!(
         NodeToken::Get,
         NodeToken::ChainKey(String::from("key")),
@@ -154,7 +154,7 @@ fn chain_context() {
 }
 
 #[test]
-fn chain_key() {
+fn chain_context() {
     let expected = vec!(
         NodeToken::Get,
         NodeToken::ChainContext,
