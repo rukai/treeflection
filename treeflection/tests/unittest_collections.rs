@@ -77,7 +77,7 @@ fn vec_insert() {
     assert_eq!(some_vec[2], -358);
     assert_eq!(some_vec[3], 42);
 
-    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(5)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::InsertIndex(5)) };
     assert_eq!(some_vec.node_step(runner), "Tried to insert at index 5 on a vector of size 4 (try a value between 0-4)");
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
@@ -85,7 +85,7 @@ fn vec_insert() {
     assert_eq!(some_vec[2], -358);
     assert_eq!(some_vec[3], 42);
 
-    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(0)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::InsertIndex(0)) };
     assert_eq!(some_vec.node_step(runner), "");
     assert_eq!(some_vec.len(), 5);
     assert_eq!(some_vec[0], 0);
@@ -94,7 +94,7 @@ fn vec_insert() {
     assert_eq!(some_vec[3], -358);
     assert_eq!(some_vec[4], 42);
 
-    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(2)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::InsertIndex(2)) };
     assert_eq!(some_vec.node_step(runner), "");
     assert_eq!(some_vec.len(), 6);
     assert_eq!(some_vec[0], 0);
@@ -115,7 +115,7 @@ fn vec_remove() {
     assert_eq!(some_vec[2], -358);
     assert_eq!(some_vec[3], 42);
 
-    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(4)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::RemoveIndex(4)) };
     assert_eq!(some_vec.node_step(runner), "Tried to remove the value at index 4 on a vector of size 4 (try a value between 0-3)");
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
@@ -123,14 +123,14 @@ fn vec_remove() {
     assert_eq!(some_vec[2], -358);
     assert_eq!(some_vec[3], 42);
 
-    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(0)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::RemoveIndex(0)) };
     assert_eq!("", some_vec.node_step(runner));
     assert_eq!(some_vec.len(), 3);
     assert_eq!(some_vec[0], 13);
     assert_eq!(some_vec[1], -358);
     assert_eq!(some_vec[2], 42);
 
-    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(2)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::RemoveIndex(2)) };
     assert_eq!("", some_vec.node_step(runner));
     assert_eq!(some_vec.len(), 2);
     assert_eq!(some_vec[0], 13);
@@ -340,7 +340,7 @@ fn option_set_fail() {
 #[test]
 fn option_insert() {
     let mut some_option: Option<usize> = None;
-    let runner = NodeRunner { tokens: vec!(NodeToken::Insert(9)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::Insert) };
     assert_eq!(some_option.node_step(runner), String::from(""));
     if let Some(value) = some_option {
         assert_eq!(0, value);
@@ -353,7 +353,7 @@ fn option_insert() {
 #[test]
 fn option_remove() {
     let mut some_option: Option<usize> = Some(358);
-    let runner = NodeRunner { tokens: vec!(NodeToken::Remove(42)) };
+    let runner = NodeRunner { tokens: vec!(NodeToken::Remove) };
     assert_eq!(some_option.node_step(runner), String::from(""));
     assert!(some_option.is_none());
 }

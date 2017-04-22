@@ -102,7 +102,7 @@ impl NodeRunner {
                 Some("copy")      => NodeToken::CopyFrom,
                 Some("paste")     => NodeToken::PasteTo,
                 Some("get")       => NodeToken::Get,
-                Some("set")    => {
+                Some("set") => {
                     // TODO: All groups of whitespace get converted into a single string. This could be an issue.
                     let mut set_value: Vec<&str> = vec!();
                     for token in action {
@@ -112,14 +112,26 @@ impl NodeRunner {
                 }
                 Some("insert") => {
                     match action.next() {
-                        Some(arg) => {
-                            match arg.parse() {
-                                Ok(index) => NodeToken::Insert(index),
-                                Err(_)    => return Err(String::from("Index must be an integer"))
+                        Some(arg0) => {
+                            match action.next() {
+                                Some(arg1) => {
+                                    match arg0.parse() {
+                                        Ok(index) => {
+                                            NodeToken::InsertIndexKey (index, arg1.to_string())
+                                        }
+                                        Err(_) => return Err(String::from("When two arguments are used, first must be a valid index."))
+                                    }
+                                }
+                                None => {
+                                    match arg0.parse() {
+                                        Ok(index) => NodeToken::InsertIndex (index),
+                                        Err(_)    => NodeToken::InsertKey (arg0.to_string()),
+                                    }
+                                }
                             }
                         }
                         None => {
-                            NodeToken::Insert(0)
+                            NodeToken::Insert
                         }
                     }
                 }
@@ -127,12 +139,12 @@ impl NodeRunner {
                     match action.next() {
                         Some(arg) => {
                             match arg.parse() {
-                                Ok(index) => NodeToken::Remove(index),
-                                Err(_)    => return Err(String::from("Index must be an integer"))
+                                Ok(index) => NodeToken::RemoveIndex (index),
+                                Err(_)    => NodeToken::RemoveKey (arg.to_string()),
                             }
                         }
                         None => {
-                            NodeToken::Remove(0)
+                            NodeToken::Remove
                         }
                     }
                 }
@@ -154,7 +166,6 @@ impl NodeRunner {
         }
 
         tokens.reverse();
-        println!("{:?}", tokens); // TODO: This should be deleted, it is really useful for now though ...
 
         Ok(NodeRunner {
             tokens: tokens

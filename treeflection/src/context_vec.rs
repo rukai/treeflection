@@ -14,7 +14,7 @@ pub struct ContextVec<T> {
 }
 
 /// The purpose of a ContextVec is to provide a way for commands to easily access relevant values.
-/// If we have  ContextVec named foo, the command `foo[?] get` will display the values in foo that the context points to.
+/// If we have a ContextVec named foo, the command `foo[?] get` will display the values in foo that the context points to.
 ///
 /// # Contents
 ///
@@ -31,7 +31,7 @@ impl<T> ContextVec<T> {
     pub fn new() -> ContextVec<T> {
         ContextVec {
             context: vec!(),
-            vector: Vec::<T>::new(),
+            vector:  vec!(),
         }
     }
 
@@ -67,7 +67,7 @@ impl<T> ContextVec<T> {
     pub fn selection(&self) -> Vec<&T> {
         let mut result: Vec<&T> = vec!();
         for i in &self.context {
-            result.push(self.vector.get(*i).unwrap());
+            result.push(&self.vector[*i]);
         }
         result
     }
@@ -97,7 +97,6 @@ impl<T> ContextVec<T> {
         self.context.clear();
     }
 
-    // TODO: Could speed up set_context* by only running checks in dev builds
     /// Sets a new context
     pub fn set_context(&mut self, value: usize) {
         let length = self.vector.len();
@@ -244,7 +243,18 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default
                 }
                 combined
             }
-            NodeToken::Insert (index) => {
+            NodeToken::Insert => {
+                self.push(T::default());
+                String::new()
+            }
+            NodeToken::Remove => {
+                if let Some(_) = self.pop() {
+                    String::new()
+                } else {
+                    String::from("Tried to remove from an empty vector.")
+                }
+            }
+            NodeToken::InsertIndex (index) => {
                 let max_index = self.len();
                 if index > max_index {
                     format!("Tried to insert at index {} on a vector of size {} (try a value between 0-{})", index, max_index, max_index)
@@ -254,7 +264,7 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default
                     String::new()
                 }
             }
-            NodeToken::Remove (index) => {
+            NodeToken::RemoveIndex (index) => {
                 let max_index = self.len() - 1;
                 if index > max_index {
                     format!("Tried to remove the value at index {} on a vector of size {} (try a value between 0-{})", index, self.len(), max_index)
@@ -273,15 +283,17 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default
 Context Vector Help
 
 Commands:
-*   help    - display this help
-*   get     - display JSON
-*   set     - set to JSON
-*   insert  - create a new element
-*   remove  - remove an element
-*   default - reset to default values
+*   help          - display this help
+*   get           - display JSON
+*   set           - set to JSON
+*   insert        - create a new element at the end of the vector
+*   insert $INDEX - create a new element at $INDEX
+*   remove        - remove the element at the end of the vector
+*   remove $INDEX - remove the element at $INDEX
+*   default       - reset to default values
 
 Accessors:
-*   [index] - access item at index
+*   [INDEX] - access item at INDEX
 *   [?]     - access items at current context
 *   .length - display number of items"#)
             }

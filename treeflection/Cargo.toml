@@ -9,7 +9,9 @@ keywords = ["reflection", "tree", "treeflection"]
 
 [dependencies]
 serde = "0.9"
+serde_derive = "0.9"
 serde_json = "0.9"
+itertools = "0.6"
 
 [dev-dependencies]
 matches = "0.1"

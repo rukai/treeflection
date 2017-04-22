@@ -12,40 +12,69 @@ fn assert_command(expected: Vec<NodeToken>, command: &str) {
 /* 
  * Actions
  */
-#[test]
-fn insert_with_index() {
-    let expected = vec!(
-        NodeToken::Insert(2),
-        NodeToken::ChainProperty(String::from("foo")),
-    );
-    assert_command(expected, "foo insert 2");
-}
 
 #[test]
 fn insert() {
     let expected = vec!(
-        NodeToken::Insert(0),
+        NodeToken::Insert,
         NodeToken::ChainProperty(String::from("foo")),
     );
     assert_command(expected, "foo insert");
 }
 
 #[test]
+fn insert_with_index() {
+    let expected = vec!(
+        NodeToken::InsertIndex(2),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo insert 2");
+}
+
+#[test]
+fn insert_with_key() {
+    let expected = vec!(
+        NodeToken::InsertKey(String::from("bar")),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo insert bar");
+}
+
+#[test]
+fn insert_with_index_key() {
+    let expected = vec!(
+        NodeToken::InsertIndexKey(2, String::from("bar")),
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo insert 2 bar");
+}
+
+#[test]
+fn remove() {
+    let expected = vec!(
+        NodeToken::Remove,
+        NodeToken::ChainProperty(String::from("foo")),
+    );
+    assert_command(expected, "foo remove");
+}
+
+
+#[test]
 fn remove_with_index() {
     let expected = vec!(
-        NodeToken::Remove(2),
+        NodeToken::RemoveIndex(2),
         NodeToken::ChainProperty(String::from("foo")),
     );
     assert_command(expected, "foo remove 2");
 }
 
 #[test]
-fn remove() {
+fn remove_with_key() {
     let expected = vec!(
-        NodeToken::Remove(0),
+        NodeToken::RemoveKey(String::from("bar")),
         NodeToken::ChainProperty(String::from("foo")),
     );
-    assert_command(expected, "foo remove");
+    assert_command(expected, "foo remove bar");
 }
 
 #[test]

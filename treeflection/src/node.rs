@@ -41,7 +41,7 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize + Default {
                     }
                 }
             }
-            NodeToken::Insert (index) => {
+            NodeToken::InsertIndex (index) => {
                 let max_index = self.len();
                 if index > max_index {
                     format!("Tried to insert at index {} on a vector of size {} (try a value between 0-{})", index, max_index, max_index)
@@ -51,7 +51,7 @@ impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize + Default {
                     String::new()
                 }
             }
-            NodeToken::Remove (index) => {
+            NodeToken::RemoveIndex (index) => {
                 let max_index = self.len() - 1;
                 if index > max_index {
                     format!("Tried to remove the value at index {} on a vector of size {} (try a value between 0-{})", index, self.len(), max_index)
@@ -325,11 +325,11 @@ impl<T> Node for Option<T> where T: Node + Serialize + Deserialize + Default {
                     }
                 }
             }
-            NodeToken::Insert (_) => {
+            NodeToken::Insert => {
                 *self = Some(T::default());
                 String::new()
             }
-            NodeToken::Remove (_) => {
+            NodeToken::Remove => {
                 *self = None;
                 String::new()
             }
