@@ -1,6 +1,7 @@
 use std::vec::Vec;
 use std::ops::{Deref, DerefMut};
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::ser::{Serialize, Serializer};
+use serde::de::{Deserialize, DeserializeOwned, Deserializer};
 use serde_json;
 
 use ::node::Node;
@@ -196,7 +197,7 @@ impl<T> DerefMut for ContextVec<T> {
     }
 }
 
-impl<T> Node for ContextVec<T> where T: Node + Serialize + Deserialize + Default {
+impl<T> Node for ContextVec<T> where T: Node + Serialize + DeserializeOwned + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {
@@ -308,8 +309,8 @@ impl<T> Serialize for ContextVec<T> where T: Serialize {
     }
 }
 
-impl<T> Deserialize for ContextVec<T> where T: Deserialize {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
+impl<'de, T> Deserialize<'de> for ContextVec<T> where T: Deserialize<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         Ok(ContextVec {
             context: vec!(),
             vector: Vec::<T>::deserialize(deserializer)?,

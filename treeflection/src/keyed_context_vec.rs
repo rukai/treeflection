@@ -1,10 +1,12 @@
-use std::vec::Vec;
-use std::ops::{Deref, DerefMut, Index, IndexMut, Range, RangeTo, RangeFrom, RangeFull};
-use serde::{Serialize, Deserialize};
-use serde_json;
-use itertools::join;
 use std::iter::Zip;
+use std::ops::{Deref, DerefMut, Index, IndexMut, Range, RangeTo, RangeFrom, RangeFull};
 use std::slice::Iter;
+use std::vec::Vec;
+
+use itertools::join;
+use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
+use serde_json;
 
 use ::node::Node;
 use ::node_runner::NodeRunner;
@@ -399,7 +401,7 @@ impl<T> DerefMut for KeyedContextVec<T> {
     }
 }
 
-impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + Deserialize + Default {
+impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {

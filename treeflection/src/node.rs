@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json;
 
 use ::node_runner::NodeRunner;
@@ -10,7 +11,7 @@ pub trait Node {
     fn node_step(&mut self, runner: NodeRunner) -> String;
 }
 
-impl<T> Node for Vec<T> where T: Node + Serialize + Deserialize + Default {
+impl<T> Node for Vec<T> where T: Node + Serialize + DeserializeOwned + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainIndex (index) => {
@@ -86,7 +87,7 @@ Accessors:
     }
 }
 
-impl<T> Node for HashMap<String, T> where T: Node + Serialize + Deserialize + Default {
+impl<T> Node for HashMap<String, T> where T: Node + Serialize + DeserializeOwned + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainKey (key) => {
@@ -173,7 +174,7 @@ fn format_keys<T>(map: &HashMap<String, T>) -> String {
 
 macro_rules! tuple_node {
     ( $( $indexes:tt $types:ident ),* ) => {
-        impl <$( $types ),*> Node for ($( $types, )*) where $( $types: Node + Serialize + Deserialize),* {
+        impl <$( $types ),*> Node for ($( $types, )*) where $( $types: Node + Serialize + DeserializeOwned),* {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 let name = stringify!{ ($( $types, )*) };
                 match runner.step() {
@@ -300,7 +301,7 @@ Commands:
 
 static mut STRING_COPY: Option<String> = None;
 
-impl<T> Node for Option<T> where T: Node + Serialize + Deserialize + Default {
+impl<T> Node for Option<T> where T: Node + Serialize + DeserializeOwned + Default {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
             NodeToken::ChainProperty (ref s) if s == "value" => {

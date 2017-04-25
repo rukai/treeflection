@@ -1,6 +1,6 @@
 [package]
 name = "treeflection"
-version = "0.1.17"
+version = "0.1.18"
 authors = ["Rukai <rubickent@gmail.com>"]
 description = "A library that provides reflection for tree structures"
 license = "MIT"
@@ -8,9 +8,9 @@ repository = "https://github.com/rukai/treeflection"
 keywords = ["reflection", "tree", "treeflection"]
 
 [dependencies]
-serde = "0.9"
-serde_derive = "0.9"
-serde_json = "0.9"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
 itertools = "0.6"
 
 [dev-dependencies]
