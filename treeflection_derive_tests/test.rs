@@ -479,7 +479,16 @@ fn help_enum() {
     let output = r#"
 SomeEnum Help
 
-Valid values:
+Commands:
+*   help    - display this help
+*   get     - display JSON
+*   set     - set to JSON
+*   copy    - copy the values from this enum
+*   paste   - paste the copied values to this enum
+*   reset   - reset to default variant
+*   variant - set to the specified variant
+
+Valid variants:
 *   Foo
 *   Bar
 *   Baz
@@ -488,14 +497,23 @@ Valid values:
 *   GenericInTuple
 *   GenericInStruct
 
-Commands:
-*   help    - display this help
-*   get     - display JSON
-*   set     - set to JSON
-*   copy    - copy the values from this enum
-*   paste   - paste the copied values to this enum
-*   reset   - reset to default variant
-*   variant - set to the specified variant"#;
+Accessors:
+Changes depending on which variant the enum is currently set to:
+
+As Baz:
+*   .x - f32
+*   .y - f32
+As Qux:
+*   [0] - u8
+As Quux:
+*   [0] - i64
+*   [1] - String
+*   [2] - bool
+As GenericInTuple:
+*   [0] - Vec
+As GenericInStruct:
+*   .generic - Vec
+"#;
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
     assert_eq!(some_enum.node_step(runner), String::from(output));

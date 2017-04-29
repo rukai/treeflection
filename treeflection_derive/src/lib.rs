@@ -407,17 +407,44 @@ Accessors:
 }
 
 fn gen_enum_help(name: &str, data: &Vec<Variant>) -> Tokens {
-    let mut valid_values = String::new();
-    for field in data {
-        let field_name = &field.ident.as_ref();
-        valid_values.push_str(format!("*   {}\n", field_name).as_ref());
+    let mut variant_list = String::new();
+    for variant in data {
+        let name = &variant.ident.as_ref();
+        variant_list.push_str(format!("*   {}\n", name).as_ref());
     }
+
+    let mut accessor_list = String::new();
+    for variant in data {
+        let variant_name = &variant.ident.as_ref();
+        match &variant.data {
+            &VariantData::Struct (ref fields) => {
+                accessor_list.push_str(format!("As {}:\n", variant_name).as_ref());
+                for field in fields {
+                    let field_name = field.ident.as_ref().unwrap().as_ref();
+                    let field_type = get_field_type(field);
+                    accessor_list.push_str(format!("*   .{} - {}\n", field_name, field_type).as_ref());
+                }
+            }
+            &VariantData::Tuple (ref fields) => {
+                accessor_list.push_str(format!("As {}:\n", variant_name).as_ref());
+                for (i, field) in fields.iter().enumerate() {
+                    let field_type = get_field_type(field);
+                    accessor_list.push_str(format!("*   [{}] - {}\n", i, field_type).as_ref());
+                }
+            }
+            &VariantData::Unit => { }
+        }
+    }
+
+    let accessor_info = if accessor_list.is_empty() {
+        String::new()
+    } else {
+        String::from("Accessors:\nChanges depending on which variant the enum is currently set to:\n")
+    };
 
     let output = format!(r#"
 {} Help
 
-Valid values:
-{}
 Commands:
 *   help    - display this help
 *   get     - display JSON
@@ -425,7 +452,12 @@ Commands:
 *   copy    - copy the values from this enum
 *   paste   - paste the copied values to this enum
 *   reset   - reset to default variant
-*   variant - set to the specified variant"#, name, valid_values);
+*   variant - set to the specified variant
+
+Valid variants:
+{}
+{}
+{}"#, name, variant_list, accessor_info, accessor_list);
 
     quote!{
         String::from(#output)
