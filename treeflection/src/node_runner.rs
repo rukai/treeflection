@@ -16,7 +16,7 @@ impl NodeRunner {
 
         let chars: Vec<char> = {
             let mut chars = vec!();
-            if !command.starts_with('.') && !command.starts_with('[') && !command.starts_with('>') {
+            if !command.starts_with('.') && !command.starts_with('[') && !command.starts_with(':') {
                 chars.push('.');
             }
             chars.extend(command.chars());
@@ -38,7 +38,7 @@ impl NodeRunner {
                 }
 
                 let mut next = chars[i+1];
-                while next != '.' && next != '[' && next != '>' {
+                while next != '.' && next != '[' && next != ':' {
                     i += 1;
                     prop_string.push(chars[i]);
                     if i + 1 >= chars.len() {
@@ -119,7 +119,7 @@ impl NodeRunner {
                     Err (_)    => return Err (format!("Invalid index: {}", index_string)),
                 }
             }
-            else if chars[i] == '>' {
+            else if chars[i] == ':' {
                 let tokenized = NodeRunner::tokenize_action(&chars[i+1..])?;
                 tokens.push(NodeRunner::get_action(tokenized.iter())?);
 
@@ -130,10 +130,9 @@ impl NodeRunner {
                 });
             }
             else {
-                println!("tokens: {:?}", tokens);
-                println!("chars[i]: {}", chars[i]);
-                println!("i: {}", i);
-                unreachable!()
+                // This happens after a ] followed by a character that doesnt start a new property, key or index
+                // So just assume the user forgot the dot on a property
+                return Err(String::from("Missing ."));
             }
         }
     }
@@ -250,7 +249,7 @@ impl NodeRunner {
                     }
                 ))
             }
-            Some(&_) => Err (String::from("Action is invalid")), // TODO: Custom actions
+            Some(&_) => Err (String::from("Invalid action")), // TODO: Custom actions
             None     => Err (String::from("Missing action"))
         }
     }
