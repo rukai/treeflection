@@ -353,7 +353,7 @@ Commands:
 Accessors:
 *   .value - the stored value number of items"#)
             }
-            action => { format!("String cannot '{:?}'", action) }
+            action => { format!("Option cannot '{:?}'", action) }
         }
     }
 }

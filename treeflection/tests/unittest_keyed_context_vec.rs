@@ -462,19 +462,58 @@ fn node_step_chain_index() {
         NodeToken::Get,
         NodeToken::ChainIndex(4),
     )};
-    assert_eq!(test_vec4().node_step(runner), "Used index 4 on a vector of size 4 (try a value between 0-3)");
+    assert_eq!(test_vec4().node_step(runner), "Used index 4 on a keyed context vector of size 4 (try a value between 0-3)");
 
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainIndex(1),
     )};
-    assert_eq!(test_vec1().node_step(runner), "Used index 1 on a vector of size 1 (try 0)");
+    assert_eq!(test_vec1().node_step(runner), "Used index 1 on a keyed context vector of size 1 (try 0)");
 
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,
         NodeToken::ChainIndex(0),
     )};
-    assert_eq!(test_vec0().node_step(runner), "Used index 0 on an empty vector");
+    assert_eq!(test_vec0().node_step(runner), "Used index 0 on an empty keyed context vector");
+}
+
+#[test]
+fn nodestep_chain_key() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainKey(String::from("foo")),
+    )};
+    assert_eq!("100000", test_vec4().node_step(runner));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainKey(String::from("bar")),
+    )};
+    assert_eq!("13", test_vec4().node_step(runner));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainKey(String::from("baz")),
+    )};
+    assert_eq!("-358", test_vec4().node_step(runner));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainKey(String::from("qux")),
+    )};
+    assert_eq!("42", test_vec4().node_step(runner));
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainKey(String::from("quux")),
+    )};
+    assert_eq!(test_vec4().node_step(runner), "Used key 'quux' on a keyed context vector that does not contain it. Try one of: 'foo', 'bar', 'baz', 'qux'");
+
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainKey(String::from("map")),
+    )};
+    assert_eq!(test_vec0().node_step(runner), "Used key 'map' on an empty keyed context vector.");
 }
 
 #[test]
@@ -488,7 +527,7 @@ fn node_step_insert_key() {
     assert_eq!(some_vec[3], 42);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::InsertKey(String::from("foo"))) };
-    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert with key 'foo' on a keyed vector that already contains it. Current keys: 'foo', 'bar', 'baz', 'qux'"));
+    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert with key 'foo' on a keyed context vector that already contains it. Current keys: 'foo', 'bar', 'baz', 'qux'"));
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -526,7 +565,7 @@ fn node_step_insert_index_key() {
     assert_eq!(some_vec[3], 42);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::InsertIndexKey(2, String::from("foo"))) };
-    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert with key 'foo' on a keyed vector that already contains it. Current keys: 'foo', 'bar', 'baz', 'qux'"));
+    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert with key 'foo' on a keyed context vector that already contains it. Current keys: 'foo', 'bar', 'baz', 'qux'"));
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -534,7 +573,7 @@ fn node_step_insert_index_key() {
     assert_eq!(some_vec[3], 42);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::InsertIndexKey(5, String::from("foo"))) };
-    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert at index 5 on a vector of size 4 (try a value between 0-4)"));
+    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert at index 5 on a keyed context vector of size 4 (try a value between 0-4)"));
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -542,7 +581,7 @@ fn node_step_insert_index_key() {
     assert_eq!(some_vec[3], 42);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::InsertIndexKey(5, String::from("new"))) };
-    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert at index 5 on a vector of size 4 (try a value between 0-4)"));
+    assert_eq!(some_vec.node_step(runner), String::from("Tried to insert at index 5 on a keyed context vector of size 4 (try a value between 0-4)"));
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -587,7 +626,7 @@ fn node_step_remove() {
     assert_eq!(some_vec.len(), 0);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::Remove) };
-    assert_eq!("Tried to remove from an empty vector.", some_vec.node_step(runner));
+    assert_eq!("Tried to remove from an empty keyed context vector.", some_vec.node_step(runner));
     assert_eq!(some_vec.len(), 0);
 }
 
@@ -602,7 +641,7 @@ fn node_step_remove_index() {
     assert_eq!(some_vec[3], 42);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::RemoveIndex(4)) };
-    assert_eq!(some_vec.node_step(runner), "Tried to remove the value at index 4 on a vector of size 4 (try a value between 0-3)");
+    assert_eq!(some_vec.node_step(runner), "Tried to remove the value at index 4 on a keyed context vector of size 4 (try a value between 0-3)");
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -634,7 +673,7 @@ fn node_step_remove_key() {
     assert_eq!(some_vec[3], 42);
 
     let runner = NodeRunner { tokens: vec!(NodeToken::RemoveKey(String::from("boo"))) };
-    assert_eq!(some_vec.node_step(runner), "Tried to remove the value with key 'boo' on a keyed vector that doesnt contain it. Current keys: 'foo', 'bar', 'baz', 'qux'");
+    assert_eq!(some_vec.node_step(runner), "Tried to remove the value with key 'boo' on a keyed context vector that doesnt contain it. Current keys: 'foo', 'bar', 'baz', 'qux'");
     assert_eq!(some_vec.len(), 4);
     assert_eq!(some_vec[0], 100000);
     assert_eq!(some_vec[1], 13);
@@ -687,5 +726,5 @@ fn node_step_set_fail()
 {
     let mut some_vec = test_vec4();
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("[1, lol]"))) };
-    assert_eq!(some_vec.node_step(runner), String::from("vector set error: expected value at line 1 column 5"));
+    assert_eq!(some_vec.node_step(runner), String::from("keyed context vector set error: expected value at line 1 column 5"));
 }

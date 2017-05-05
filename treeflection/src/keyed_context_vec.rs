@@ -410,25 +410,25 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
                     Some (item) => item.node_step(runner),
                     None => {
                         return match length {
-                             0 => format!("Used index {} on an empty vector", index),
-                             1 => format!("Used index {} on a vector of size 1 (try 0)", index),
-                             _ => format!("Used index {} on a vector of size {} (try a value between 0-{})", index, length, length-1)
+                             0 => format!("Used index {} on an empty keyed context vector", index),
+                             1 => format!("Used index {} on a keyed context vector of size 1 (try 0)", index),
+                             _ => format!("Used index {} on a keyed context vector of size {} (try a value between 0-{})", index, length, length-1)
                         }
                     }
                 }
             }
-            NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
-            NodeToken::Get => {
-                serde_json::to_string_pretty(&mut self.vector).unwrap()
-            }
-            NodeToken::Set(value) => {
-                match serde_json::from_str(&value) {
-                    Ok(result) => {
-                        self.vector = result;
-                        String::from("")
-                    }
-                    Err(err) => {
-                        format!("vector set error: {}", err)
+            NodeToken::ChainKey (key) => {
+                let length = self.vector.len();
+                match self.key_to_value_mut(&key) {
+                    Some (item) => { return item.node_step(runner) }
+                    None => { }
+                }
+                match length {
+                     0 => {
+                        format!("Used key '{}' on an empty keyed context vector.", key)
+                     }
+                     _ => {
+                        format!("Used key '{}' on a keyed context vector that does not contain it. Try one of: {}", key, self.format_keys())
                     }
                 }
             }
@@ -448,9 +448,24 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
                 }
                 combined
             }
+            NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
+            NodeToken::Get => {
+                serde_json::to_string_pretty(&mut self.vector).unwrap()
+            }
+            NodeToken::Set (value) => {
+                match serde_json::from_str(&value) {
+                    Ok(result) => {
+                        self.vector = result;
+                        String::from("")
+                    }
+                    Err(err) => {
+                        format!("keyed context vector set error: {}", err)
+                    }
+                }
+            }
             NodeToken::InsertKey (key) => {
                 if self.contains_key(&key) {
-                    format!("Tried to insert with key '{}' on a keyed vector that already contains it. Current keys: {}", key, self.format_keys())
+                    format!("Tried to insert with key '{}' on a keyed context vector that already contains it. Current keys: {}", key, self.format_keys())
                 } else {
                     self.push(key, T::default());
                     String::new()
@@ -459,9 +474,9 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
             NodeToken::InsertIndexKey (index, key) => {
                 let max_index = self.len();
                 if index > max_index {
-                    format!("Tried to insert at index {} on a vector of size {} (try a value between 0-{})", index, max_index, max_index)
+                    format!("Tried to insert at index {} on a keyed context vector of size {} (try a value between 0-{})", index, max_index, max_index)
                 } else if self.contains_key(&key) {
-                    format!("Tried to insert with key '{}' on a keyed vector that already contains it. Current keys: {}", key, self.format_keys())
+                    format!("Tried to insert with key '{}' on a keyed context vector that already contains it. Current keys: {}", key, self.format_keys())
                 } else {
                     self.insert(index, key, T::default());
                     String::new()
@@ -469,7 +484,7 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
             }
             NodeToken::Remove => {
                 if self.len() == 0 {
-                    String::from("Tried to remove from an empty vector.")
+                    String::from("Tried to remove from an empty keyed context vector.")
                 } else {
                     self.pop();
                     String::new()
@@ -478,7 +493,7 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
             NodeToken::RemoveIndex (index) => {
                 let max_index = self.len() - 1;
                 if index > max_index {
-                    format!("Tried to remove the value at index {} on a vector of size {} (try a value between 0-{})", index, self.len(), max_index)
+                    format!("Tried to remove the value at index {} on a keyed context vector of size {} (try a value between 0-{})", index, self.len(), max_index)
                 }
                 else {
                     self.remove(index);
@@ -490,7 +505,7 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
                     self.remove(index);
                     String::new()
                 } else {
-                    format!("Tried to remove the value with key '{}' on a keyed vector that doesnt contain it. Current keys: {}", key, self.format_keys())
+                    format!("Tried to remove the value with key '{}' on a keyed context vector that doesnt contain it. Current keys: {}", key, self.format_keys())
                 }
             }
             NodeToken::SetDefault => {
@@ -517,7 +532,7 @@ Accessors:
 *   [?]     - access items at current context
 *   .length - display number of items"#)
             }
-            action => { format!("vector cannot '{:?}'", action) }
+            action => { format!("keyed context vector cannot '{:?}'", action) }
         }
     }
 }
