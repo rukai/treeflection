@@ -300,11 +300,15 @@ fn set_tuple_enum() {
     assert_eq!(some_enum.node_step(runner), String::from(""));
     assert!(matches!(some_enum, SomeEnum::Qux(13)));
 
-    let some_string = String::from("SomeString");
     let mut some_enum = SomeEnum::Bar;
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("{\"Quux\":[-42, \"SomeString\", true]}"))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
-    assert!(matches!(some_enum, SomeEnum::Quux(-42, some_string, true))); // TODO: I suspect this isnt testing properly due to the unused variable warning ...
+    match some_enum {
+        SomeEnum::Quux (-42, some_string, true) => {
+            assert_eq!(some_string.as_str(), "SomeString");
+        }
+        _ => { panic!("Did not match SomeEnum::Quux (-42, _, true)") }
+    }
 }
 
 #[test]
