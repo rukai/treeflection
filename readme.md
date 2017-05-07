@@ -1,11 +1,11 @@
 # Treeflection
 
-Treeflection runs a command stored as a string on a tree of structs & primitive types.
+Treeflection runs a command stored as a string on a tree of structs, collections and primitive types.
 
 ## Commands
 
 A command to set an int in a Vec in a struct in another struct in a Hashmap to the value 50 looks like:
-`someHashMap["key"].someChild.anotherChild[0] set 50`
+`someHashMap["key"].someChild.anotherChild[0]:set 50`
 
 For the full syntax take a look at the [Command Manual](commandManual.md)
 
@@ -16,7 +16,26 @@ Then a new `NodeRunner` is created using the command string and passed to the no
 The `NodeRunner` is then passed to the children specified in the command and then runs the command on the final specified child.
 Use the treeflection_derive crate to #[Derive(Node)] for your own structs or write your own handlers.
 
-TODO: give proper example
+```
+extern crate treeflection;
+use treeflection::{NodeRunner, Node};
+
+pub fn main() {
+    let mut test_vec = vec!(0, 413, 358, 42);
+
+    let command = "[1]:get";
+    let result = test_vec.node_step(NodeRunner::new(command).unwrap());
+    assert_eq!(result, "413");
+
+    let command = "[1]:set 1111";
+    let result = test_vec.node_step(NodeRunner::new(command).unwrap());
+    assert_eq!(result, "");
+
+    let command = "[1]:get";
+    let result = test_vec.node_step(NodeRunner::new(command).unwrap());
+    assert_eq!(result, "1111");
+}
+```
 
 ## Reuse
 
