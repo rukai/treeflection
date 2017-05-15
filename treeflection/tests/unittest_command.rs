@@ -199,6 +199,15 @@ fn chain_context() {
 }
 
 #[test]
+fn chain_all() {
+    let expected = vec!(
+        NodeToken::Get,
+        NodeToken::ChainAll,
+    );
+    assert_command(expected, "[*]:get");
+}
+
+#[test]
 fn property1() {
     let expected = vec!(
         NodeToken::Get,

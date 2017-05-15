@@ -18,6 +18,7 @@ Index notation is used to access the properties of Vec, HashMap, tuples and tupl
 *   `property["key_string"]` select by key
 *   `property[0]`            select by index
 *   `property[?]`            select based on context
+*   `property[*]`            select all
 
 ## Actions
 

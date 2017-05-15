@@ -68,6 +68,15 @@ fn vec_chain_index() {
 }
 
 #[test]
+fn vec_chain_all() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainAll,
+    )};
+    assert_eq!("|100000|13|-358|42|", test_vec4().node_step(runner));
+}
+
+#[test]
 fn vec_insert() {
     let mut some_vec = test_vec4();
 
@@ -212,6 +221,15 @@ fn tuple_chain_index() {
         NodeToken::ChainIndex(2),
     )};
     assert_eq!(test_tuple().node_step(runner), "Used index 2 on a ( T0 , T1 , )");
+}
+
+#[test]
+fn tuple_chain_all() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainAll,
+    )};
+    assert_eq!("|42|true|", test_tuple().node_step(runner));
 }
 
 #[test]

@@ -27,6 +27,14 @@ impl<T> Node for Vec<T> where T: Node + Serialize + DeserializeOwned + Default {
                     }
                 }
             }
+            NodeToken::ChainAll => {
+                let mut combined = String::from("|");
+                for item in self {
+                    combined.push_str(item.node_step(runner.clone()).as_ref());
+                    combined.push('|');
+                }
+                combined
+            }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) } // TODO: yeah this should really be a command not a property
             NodeToken::Get => {
                 serde_json::to_string_pretty(self).unwrap()
@@ -104,6 +112,16 @@ impl<T> Node for HashMap<String, T> where T: Node + Serialize + DeserializeOwned
                         format!("Used key '{}' on a map that does not contain it. Try one of: {}", key, format_keys(self))
                     }
                 }
+            }
+            NodeToken::ChainAll => {
+                let mut combined = String::from("|");
+                let mut pairs: Vec<_> = self.iter_mut().collect();
+                pairs.sort_by_key(|x| x.0);
+                for (_, mut item) in pairs {
+                    combined.push_str(item.node_step(runner.clone()).as_ref());
+                    combined.push('|');
+                }
+                combined
             }
             NodeToken::GetKeys => {
                 format!("Keys: {}", format_keys(self))
@@ -185,6 +203,14 @@ macro_rules! tuple_node {
                             )*
                             _ => format!("Used index {} on a {}", index, name)
                         }
+                    }
+                    NodeToken::ChainAll => {
+                        let mut combined = String::from("|");
+                        $(
+                            combined.push_str(self.$indexes.node_step(runner.clone()).as_ref());
+                            combined.push('|');
+                        )*
+                        combined
                     }
                     NodeToken::Get => {
                         serde_json::to_string_pretty(self).unwrap()

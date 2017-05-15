@@ -24,6 +24,15 @@ fn test_map0() -> HashMap<String, i32> {
 }
 
 #[test]
+fn map_chain_all() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainAll,
+    )};
+    assert_eq!("|13|-358|100000|42|", test_map4().node_step(runner));
+}
+
+#[test]
 fn map_chain_key() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,

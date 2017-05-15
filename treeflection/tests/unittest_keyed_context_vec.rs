@@ -433,6 +433,15 @@ fn node_step_chain_context() {
 }
 
 #[test]
+fn node_step_chain_all() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Get,
+        NodeToken::ChainAll,
+    )};
+    assert_eq!("|100000|13|-358|42|", test_vec4().node_step(runner));
+}
+
+#[test]
 fn node_step_chain_index() {
     let runner = NodeRunner { tokens: vec!(
         NodeToken::Get,

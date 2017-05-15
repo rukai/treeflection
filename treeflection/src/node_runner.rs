@@ -26,6 +26,7 @@ impl NodeRunner {
         // repeat:
         // *         if '.' then property, consume until before '.' or '[' or '>'
         // *    else if '[?]' then context, consume it.
+        // *    else if '[*]' then all, consume it.
         // *    else if '["' then index, consume until '"]'
         // *    else if '[' then key, consume until ']'
         // *    else if '>' then action, consume arguments seperated by ' ' until end of string
@@ -63,6 +64,13 @@ impl NodeRunner {
                 }
                 i += 3;
                 tokens.push(NodeToken::ChainContext);
+            }
+            else if i + 2 < chars.len() && chars[i] == '[' && chars[i+1] == '*' && chars[i+2] == ']' {
+                if i + 3 >= chars.len() {
+                    return Err(String::from("Missing action"));
+                }
+                i += 3;
+                tokens.push(NodeToken::ChainAll);
             }
             else if i + 1 < chars.len() && chars[i] == '[' && chars[i+1] == '"' {
                 let mut key_string = String::new();

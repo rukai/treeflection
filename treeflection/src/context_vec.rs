@@ -213,21 +213,6 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + DeserializeOwned + De
                     }
                 }
             }
-            NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
-            NodeToken::Get => {
-                serde_json::to_string_pretty(&mut self.vector).unwrap()
-            }
-            NodeToken::Set(value) => {
-                match serde_json::from_str(&value) {
-                    Ok(result) => {
-                        self.vector = result;
-                        String::from("")
-                    }
-                    Err(err) => {
-                        format!("vector set error: {}", err)
-                    }
-                }
-            }
             NodeToken::ChainContext => {
                 let mut combined = String::from("|");
                 for i in self.context.iter() {
@@ -243,6 +228,29 @@ impl<T> Node for ContextVec<T> where T: Node + Serialize + DeserializeOwned + De
                     combined.push('|');
                 }
                 combined
+            }
+            NodeToken::ChainAll => {
+                let mut combined = String::from("|");
+                for item in self.vector.iter_mut() {
+                    combined.push_str(item.node_step(runner.clone()).as_ref());
+                    combined.push('|');
+                }
+                combined
+            }
+            NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
+            NodeToken::Get => {
+                serde_json::to_string_pretty(&mut self.vector).unwrap()
+            }
+            NodeToken::Set(value) => {
+                match serde_json::from_str(&value) {
+                    Ok(result) => {
+                        self.vector = result;
+                        String::from("")
+                    }
+                    Err(err) => {
+                        format!("vector set error: {}", err)
+                    }
+                }
             }
             NodeToken::Insert => {
                 self.push(T::default());

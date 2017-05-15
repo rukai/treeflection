@@ -448,6 +448,14 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
                 }
                 combined
             }
+            NodeToken::ChainAll => {
+                let mut combined = String::from("|");
+                for item in self.vector.iter_mut() {
+                    combined.push_str(item.node_step(runner.clone()).as_ref());
+                    combined.push('|');
+                }
+                combined
+            }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
             NodeToken::Get => {
                 serde_json::to_string_pretty(&mut self.vector).unwrap()
