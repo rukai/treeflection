@@ -8,18 +8,19 @@ extern crate serde_json;
 
 use proc_macro::TokenStream;
 
-use syn::{Body, Ident, Variant, VariantData, Visibility, Field, Ty};
+use syn::{Attribute, Body, Ident, Variant, VariantData, Visibility, Field, Ty, MetaItem, NestedMetaItem, Lit};
 use quote::Tokens;
 
-#[proc_macro_derive(Node)]
+#[proc_macro_derive(Node, attributes(NodeActions))]
 pub fn treeflection_derive(input: TokenStream) -> TokenStream {
     let input = input.to_string();
-    let ast = syn::parse_macro_input(&input).unwrap();
+    let ast = syn::parse_derive_input(&input).unwrap();
     let name = &ast.ident;
+    let actions = attrs_to_actions(&ast.attrs);
 
     let impl_for = match ast.body {
-        Body::Enum(ref data)   => gen_enum(name, data),
-        Body::Struct(ref data) => gen_struct(name, data)
+        Body::Enum(ref data)   => gen_enum(name, data, &actions),
+        Body::Struct(ref data) => gen_struct(name, data, &actions)
     };
     let copy_var = gen_copy_var(name);
 
@@ -100,7 +101,43 @@ fn gen_paste(name: &str) -> Tokens {
     }
 }
 
-fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
+fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
+    let mut arms: Vec<Tokens> = vec!();
+    for action in actions {
+        let action_name = &action.action;
+        let function_name = Ident::from(action.function.as_ref());
+        let mut args: Vec<Tokens> = vec!();
+        for i in 0..action.args {
+            args.push(quote! { args[#i].clone() });
+        }
+
+        let function_call = if action.return_value {
+            quote! {
+                self.#function_name(#( #args ),*)
+            }
+        } else {
+            quote! {
+                self.#function_name(#( #args ),*);
+                String::new()
+            }
+        };
+
+        arms.push(quote! {
+            #action_name => {
+                #function_call
+            }
+        });
+    }
+
+    quote! {
+        match action.as_str() {
+            #( #arms )*
+            a => format!("{} cannot '{}'", #name, a)
+        }
+    }
+}
+
+fn gen_enum(name: &Ident, data: &Vec<Variant>, actions: &[Action]) -> Tokens {
     let name_string = name.to_string();
 
     let property_arm = gen_enum_property(&name, data);
@@ -109,8 +146,9 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     let set_arm = gen_set(&name_string);
     let copy_arm = gen_copy(&name_string);
     let paste_arm = gen_paste(&name_string);
-    let help_arm = gen_enum_help(&name_string, data);
+    let help_arm = gen_enum_help(&name_string, data, actions);
     let variant_arm = gen_variant(&name, data);
+    let custom_arm = gen_custom_actions(&name_string, actions);
     let default_arm = quote! {
         *self = #name::default();
         String::new()
@@ -119,9 +157,13 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
     // this is required to avoid an unused variable warning from generated code
     let index_name = if check_using_index(data) {
         quote! { index }
-    }
-    else {
+    } else {
         quote! { _ }
+    };
+    let args = if actions.iter().all(|x| x.args == 0) {
+        quote! { _ }
+    } else {
+        quote! { args }
     };
 
     quote! {
@@ -137,6 +179,7 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>) -> Tokens {
                     NodeToken::Help                     => { #help_arm }
                     NodeToken::SetVariant (variant)     => { #variant_arm }
                     NodeToken::SetDefault               => { #default_arm }
+                    NodeToken::Custom (action, #args)   => { #custom_arm }
                     action                              => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
             }
@@ -325,7 +368,7 @@ fn gen_enum_index(name: &Ident, data: &Vec<Variant>) -> Tokens {
     }
 }
 
-fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
+fn gen_struct(name: &Ident, data: &VariantData, actions: &[Action]) -> Tokens {
     let name_string = name.to_string();
 
     let property_arm = gen_struct_property(&name_string, data);
@@ -333,10 +376,18 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
     let set_arm = gen_set(&name_string);
     let copy_arm = gen_copy(&name_string);
     let paste_arm = gen_paste(&name_string);
-    let help_arm = gen_struct_help(&name_string, data);
+    let help_arm = gen_struct_help(&name_string, data, actions);
+    let custom_arm = gen_custom_actions(&name_string, actions);
     let default_arm = quote! {
         *self = #name::default();
         String::new()
+    };
+
+    // this is required to avoid an unused variable warning from generated code
+    let args = if actions.iter().all(|x| x.args == 0) {
+        quote! { _ }
+    } else {
+        quote! { args }
     };
 
     quote! {
@@ -350,6 +401,7 @@ fn gen_struct(name: &Ident, data: &VariantData) -> Tokens {
                     NodeToken::PasteTo                  => { #paste_arm }
                     NodeToken::Help                     => { #help_arm }
                     NodeToken::SetDefault               => { #default_arm }
+                    NodeToken::Custom (action, #args)   => { #custom_arm }
                     action                              => { format!("{} cannot '{:?}'", #name_string, action) }
                 }
             }
@@ -377,20 +429,20 @@ fn gen_struct_property(name: &str, data: &VariantData) -> Tokens {
     }
 }
 
-fn gen_struct_help(name: &str, data: &VariantData) -> Tokens {
+fn gen_struct_help(name: &str, data: &VariantData, actions: &[Action]) -> Tokens {
     let mut output = format!(r#"
 {} Help
 
-Commands:
+Actions:
 *   help  - display this help
 *   get   - display JSON
 *   set   - set to JSON
 *   copy  - copy the values from this struct
 *   paste - paste the copied values to this struct
 *   reset - reset to default values
-
+{}
 Accessors:
-"#, name);
+"#, name, custom_action_help(actions));
 
     for field in data.fields() {
         if let Visibility::Public = field.vis {
@@ -406,7 +458,7 @@ Accessors:
     }
 }
 
-fn gen_enum_help(name: &str, data: &Vec<Variant>) -> Tokens {
+fn gen_enum_help(name: &str, data: &Vec<Variant>, actions: &[Action]) -> Tokens {
     let mut variant_list = String::new();
     for variant in data {
         let name = &variant.ident.as_ref();
@@ -442,10 +494,12 @@ fn gen_enum_help(name: &str, data: &Vec<Variant>) -> Tokens {
         String::from("Accessors:\nChanges depending on which variant the enum is currently set to:\n")
     };
 
+    let custom_actions = custom_action_help(actions);
+
     let output = format!(r#"
 {} Help
 
-Commands:
+Actions:
 *   help    - display this help
 *   get     - display JSON
 *   set     - set to JSON
@@ -453,15 +507,28 @@ Commands:
 *   paste   - paste the copied values to this enum
 *   reset   - reset to default variant
 *   variant - set to the specified variant
-
+{}
 Valid variants:
 {}
 {}
-{}"#, name, variant_list, accessor_info, accessor_list);
+{}"#, name, custom_actions, variant_list, accessor_info, accessor_list);
 
     quote!{
         String::from(#output)
     }
+}
+
+fn custom_action_help(actions: &[Action]) -> String {
+    let mut result = String::new();
+    for action in actions {
+        let action_string = if let &Some(ref help) = &action.help {
+            format!("*   {} - {}\n", action.action, help)
+        } else {
+            format!("*   {}\n", action.action)
+        };
+        result.push_str(action_string.as_ref());
+    }
+    result
 }
 
 fn get_field_type(field: &Field) -> &str {
@@ -472,4 +539,104 @@ fn get_field_type(field: &Field) -> &str {
         }
     }
     "UNABLE TO GET TYPE"
+}
+
+fn attrs_to_actions(attrs: &[Attribute]) -> Vec<Action> {
+    let mut actions: Vec<Action> = vec!();
+    for attr in attrs {
+        if let &MetaItem::List (ref ident, ref nest_metas) = &attr.value {
+            if ident == "NodeActions" {
+                for nest_meta in nest_metas {
+                    if let &NestedMetaItem::MetaItem (ref sub_attr) = nest_meta {
+                        actions.push(attr_to_action(sub_attr));
+                    }
+                    else {
+                        panic!("Invalid NodeActions attribute: Needs to be a list of NodeAction")
+                    }
+                }
+            }
+        }
+    }
+    actions
+}
+
+fn attr_to_action(attr: &MetaItem) -> Action {
+    if let &MetaItem::List (ref ident, ref sub_attrs) = attr {
+        if ident == "NodeAction" {
+            let mut action: Option<String> = None;
+            let mut function: Option<String> = None;
+            let mut args: usize = 0;
+            let mut return_value = true;
+            let mut help: Option<String> = None;
+            for sub_attr in sub_attrs {
+                if let &NestedMetaItem::MetaItem (ref sub_attr) = sub_attr {
+                    match sub_attr {
+                        &MetaItem::Word (ref ident) => {
+                            if ident == "return_nothing" {
+                                return_value = false;
+                            } else {
+                                panic!("Invalid NodeAction attribute: Invalid value in list");
+                            }
+                        }
+                        &MetaItem::NameValue (ref ident, ref literal) => {
+                            match ident.as_ref() {
+                                "action" => {
+                                    if let &Lit::Str(ref value, _) = literal { action = Some(value.clone()) }
+                                    else { panic!("Invalid NodeAction attribute: Expected a string for action value"); }
+                                }
+                                "function" => {
+                                    if let &Lit::Str(ref value, _) = literal { function = Some(value.clone()) }
+                                    else { panic!("Invalid NodeAction attribute: Expected a string for function value"); }
+                                }
+                                "help" => {
+                                    if let &Lit::Str(ref value, _) = literal { help = Some(value.clone()) }
+                                    else { panic!("Invalid NodeAction attribute: Expected a string for help value"); }
+                                }
+                                "args" => {
+                                    if let &Lit::Str(ref value, _) = literal {
+                                        args = value.parse::<usize>().expect("Invalid NodeAction attribute: Expected a string that can parse into usize");
+                                    }
+                                    else {
+                                        panic!("Invalid NodeAction attribute: Expected a string for args value");
+                                    }
+                                }
+                                _ => { panic!("Invalid NodeAction attribute: Invalid value in list"); }
+                            }
+                        }
+                        &MetaItem::List (_, _) => {
+                            panic!("Invalid NodeAction attribute: Invalid value in list");
+                        }
+                    }
+                }
+                else {
+                    panic!("Invalid NodeAction attribute: Invalid value in list");
+                }
+            }
+
+            let function = function.expect("Invalid NodeAction attribute: Needs to specify a function");
+
+            Action {
+                action:       action.unwrap_or(function.clone()),
+                function:     function,
+                args:         args,
+                return_value: return_value,
+                help:         help,
+            }
+        }
+        else {
+            panic!("Invalid NodeAction attribute: Needs to be a list")
+        }
+    }
+    else {
+        panic!("Invalid NodeAction attribute: Needs to be a list")
+    }
+}
+
+
+struct Action {
+    pub action:       String,
+    pub function:     String,
+    pub args:         usize,
+    pub return_value: bool,
+    pub help:         Option<String>,
 }

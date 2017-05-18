@@ -257,7 +257,10 @@ impl NodeRunner {
                     }
                 ))
             }
-            Some(&_) => Err (String::from("Invalid action")), // TODO: Custom actions
+            Some(action_name) => {
+               let args: Vec<String> = action.cloned().collect();
+               Ok(NodeToken::Custom(action_name.to_string(), args))
+            }
             None     => Err (String::from("Missing action"))
         }
     }

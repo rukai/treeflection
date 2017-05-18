@@ -21,5 +21,5 @@ pub enum NodeToken {
     Remove,
     RemoveIndex (usize),
     RemoveKey (String),
-    Custom (String),
+    Custom (String, Vec<String>),
 }

@@ -158,6 +158,22 @@ fn help() {
     assert_command(expected, ":help");
 }
 
+#[test]
+fn custom_action() {
+    let expected = vec!(
+        NodeToken::Custom(String::from("foo"), vec!())
+    );
+    assert_command(expected, ":foo");
+}
+
+#[test]
+fn custom_action_with_args() {
+    let expected = vec!(
+        NodeToken::Custom(String::from("foo"), vec!(String::from("bar"), String::from("baz")))
+    );
+    assert_command(expected, ":foo bar baz");
+}
+
 /* 
  * Path
  */
@@ -319,5 +335,4 @@ fn invalid_inputs() {
     assert_command_fail("Missing action", "[?]");
     assert_command_fail("Empty command", "");
     assert_command_fail("Missing action", r#"foo:"#);
-    assert_command_fail("Invalid action", r#"foo:a"#);
 }

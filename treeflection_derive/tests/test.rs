@@ -1,7 +1,3 @@
-// TODO: These tests are in this crate as a workaround for testing treeflection_derive
-// while tests folder does not work with macros 1.1 https://github.com/rust-lang/rust/issues/37480
-// alternatively we could move the other tests into this crate
-
 #![feature(drop_types_in_const)]
 
 extern crate treeflection;
@@ -23,9 +19,29 @@ struct Parent {
     private: i64,
 }
 
+#[NodeActions(
+    NodeAction(action="action_name", function="function_name", args="1", return_nothing, help="add the first argument to qux"),
+    NodeAction(function="same_name"),
+)]
 #[derive(Node, Serialize, Deserialize, Default, Clone)]
 struct Child {
     pub qux: i32,
+}
+
+impl Child {
+    fn new() -> Child {
+        Child {
+            qux: 413,
+        }
+    }
+
+    fn function_name(&mut self, value: String) {
+        self.qux += value.parse().unwrap();
+    }
+
+    fn same_name(&self) -> String {
+        String::from("basic action")
+    }
 }
 
 impl Parent {
@@ -52,6 +68,26 @@ impl Parent {
             private: 0,
         }
     }
+}
+
+#[test]
+fn custom_function_name() {
+    let mut child = Child::new();
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Custom(String::from("action_name"), vec!(String::from("7")))
+    )};
+    assert_eq!(child.node_step(runner), String::from(""));
+    assert_eq!(child.qux, 420);
+}
+
+#[test]
+fn custom_same_name() {
+    let mut child = Child::new();
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::Custom(String::from("same_name"), vec!())
+    )};
+    assert_eq!(child.node_step(runner), String::from("basic action"));
+    assert_eq!(child.qux, 413);
 }
 
 #[test]
@@ -180,11 +216,11 @@ fn copy_paste_struct() {
 }
 
 #[test]
-fn help_struct() {
+fn help_struct_parent() {
     let output = r#"
 Parent Help
 
-Commands:
+Actions:
 *   help  - display this help
 *   get   - display JSON
 *   set   - set to JSON
@@ -202,7 +238,29 @@ Accessors:
     assert_eq!(parent.node_step(runner), String::from(output));
 }
 
-#[derive(Node, Serialize, Deserialize, Clone)]
+#[test]
+fn help_struct_child() {
+    let output = r#"
+Child Help
+
+Actions:
+*   help  - display this help
+*   get   - display JSON
+*   set   - set to JSON
+*   copy  - copy the values from this struct
+*   paste - paste the copied values to this struct
+*   reset - reset to default values
+*   action_name - add the first argument to qux
+*   same_name
+
+Accessors:
+*   qux - i32"#;
+    let mut parent = Child::new();
+    let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
+    assert_eq!(parent.node_step(runner), String::from(output));
+}
+
+#[derive(Node, Serialize, Deserialize, Clone, Debug)]
 enum SomeEnum {
     Foo,
     Bar,
@@ -315,7 +373,7 @@ fn set_tuple_enum() {
 fn get_struct_enum() {
     let mut some_enum = SomeEnum::Baz {x: 412.12345, y: 44.11};
     let runner = NodeRunner { tokens: vec!(NodeToken::Get) };
-    let output = 
+    let output =
 r#"{
   "Baz": {
     "x": 412.12344,
@@ -330,7 +388,7 @@ fn set_struct_enum() {
     let mut some_enum = SomeEnum::Baz {x: 412.12345, y: 44.11};
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from(r#"{"Baz":{"x":1337.1337,"y":42.13}}"#))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
-    assert!(matches!(some_enum, SomeEnum::Baz {x: 1337.1337, y: 42.13}));
+    assert_eq!(format!("{:?}", some_enum), String::from("Baz { x: 1337.1337, y: 42.13 }"));
 }
 
 #[test]
@@ -436,7 +494,7 @@ fn variant_enum() {
 
     let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Baz"))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
-    assert!(matches!(some_enum, SomeEnum::Baz { x: 0.0, y: 0.0 }));
+    assert_eq!(format!("{:?}", some_enum), String::from("Baz { x: 0, y: 0 }"));
 
     let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Qux"))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
@@ -483,7 +541,7 @@ fn help_enum() {
     let output = r#"
 SomeEnum Help
 
-Commands:
+Actions:
 *   help    - display this help
 *   get     - display JSON
 *   set     - set to JSON
