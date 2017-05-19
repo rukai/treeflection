@@ -111,7 +111,7 @@ fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
             args.push(quote! { args[#i].clone() });
         }
 
-        let function_call = if action.return_value {
+        let function_call = if action.return_string {
             quote! {
                 self.#function_name(#( #args ),*)
             }
@@ -566,14 +566,14 @@ fn attr_to_action(attr: &MetaItem) -> Action {
             let mut action: Option<String> = None;
             let mut function: Option<String> = None;
             let mut args: usize = 0;
-            let mut return_value = true;
+            let mut return_string = false;
             let mut help: Option<String> = None;
             for sub_attr in sub_attrs {
                 if let &NestedMetaItem::MetaItem (ref sub_attr) = sub_attr {
                     match sub_attr {
                         &MetaItem::Word (ref ident) => {
-                            if ident == "return_nothing" {
-                                return_value = false;
+                            if ident == "return_string" {
+                                return_string = true;
                             } else {
                                 panic!("Invalid NodeAction attribute: Invalid value in list");
                             }
@@ -619,7 +619,7 @@ fn attr_to_action(attr: &MetaItem) -> Action {
                 action:       action.unwrap_or(function.clone()),
                 function:     function,
                 args:         args,
-                return_value: return_value,
+                return_string: return_string,
                 help:         help,
             }
         }
@@ -637,6 +637,6 @@ struct Action {
     pub action:       String,
     pub function:     String,
     pub args:         usize,
-    pub return_value: bool,
+    pub return_string: bool,
     pub help:         Option<String>,
 }

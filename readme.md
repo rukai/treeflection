@@ -76,11 +76,11 @@ impl SolarSystem {
 
 #[NodeActions(
     // we want the function circumference to be accessible via treeflection by the same name
-    NodeAction(function="circumference"),
+    NodeAction(function="circumference", return_string),
 
     // we want the function explode_internal_naming_scheme to be accessible via treeflection
     // by the name explode and we want to ignore its return value so that it will compile despite not returning a String
-    NodeAction(action="explode", function="explode_internal_naming_scheme", return_nothing),
+    NodeAction(action="explode", function="explode_internal_naming_scheme"),
 )]
 #[derive(Node, Serialize, Deserialize, Default, Clone)]
 struct Planet {

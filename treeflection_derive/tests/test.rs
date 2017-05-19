@@ -20,8 +20,8 @@ struct Parent {
 }
 
 #[NodeActions(
-    NodeAction(action="action_name", function="function_name", args="1", return_nothing, help="add the first argument to qux"),
-    NodeAction(function="same_name"),
+    NodeAction(action="action_name", function="function_name", args="1", help="add the first argument to qux"),
+    NodeAction(function="same_name", return_string),
 )]
 #[derive(Node, Serialize, Deserialize, Default, Clone)]
 struct Child {
