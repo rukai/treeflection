@@ -138,7 +138,7 @@ fn map_default() {
 #[test]
 fn map_get_keys() {
     let runner = NodeRunner { tokens: vec!(NodeToken::GetKeys) };
-    assert_eq!("Keys: 'bar', 'baz', 'foo', 'qux'", test_map4().node_step(runner));
+    assert_eq!("'bar', 'baz', 'foo', 'qux'", test_map4().node_step(runner));
 }
 
 #[test]

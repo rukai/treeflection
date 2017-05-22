@@ -198,12 +198,13 @@ impl NodeRunner {
 
     fn get_action(mut action: Iter<String>) -> Result<NodeToken, String> {
         match action.next().map(|x| x.as_ref()) {
-            Some("help")  => Ok(NodeToken::Help),
-            Some("reset") => Ok(NodeToken::SetDefault),
-            Some("edit")  => Ok(NodeToken::Edit),
-            Some("copy")  => Ok(NodeToken::CopyFrom),
-            Some("paste") => Ok(NodeToken::PasteTo),
-            Some("get")   => Ok(NodeToken::Get),
+            Some("help")    => Ok(NodeToken::Help),
+            Some("reset")   => Ok(NodeToken::SetDefault),
+            Some("edit")    => Ok(NodeToken::Edit),
+            Some("copy")    => Ok(NodeToken::CopyFrom),
+            Some("paste")   => Ok(NodeToken::PasteTo),
+            Some("getkeys") => Ok(NodeToken::GetKeys),
+            Some("get")     => Ok(NodeToken::Get),
             Some("set") => {
                 let mut set_value: Vec<&str> = vec!();
                 for token in action {

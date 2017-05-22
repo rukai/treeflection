@@ -124,7 +124,7 @@ impl<T> Node for HashMap<String, T> where T: Node + Serialize + DeserializeOwned
                 combined
             }
             NodeToken::GetKeys => {
-                format!("Keys: {}", format_keys(self))
+                format_keys(self)
             }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.len().node_step(runner) } // TODO: yeah this should really be a command not a property
             NodeToken::Get => {

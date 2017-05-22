@@ -457,6 +457,9 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
                 combined
             }
             NodeToken::ChainProperty (ref s) if s == "length" => { self.vector.len().node_step(runner) }
+            NodeToken::GetKeys => {
+                self.format_keys()
+            }
             NodeToken::Get => {
                 serde_json::to_string_pretty(&mut self.vector).unwrap()
             }

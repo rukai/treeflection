@@ -151,6 +151,14 @@ fn edit() {
 }
 
 #[test]
+fn getkeys() {
+    let expected = vec!(
+        NodeToken::GetKeys,
+    );
+    assert_command(expected, ":getkeys");
+}
+
+#[test]
 fn help() {
     let expected = vec!(
         NodeToken::Help,

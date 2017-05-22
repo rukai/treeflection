@@ -382,7 +382,15 @@ fn key_unused() {
  */
 
 #[test]
-fn help() {
+fn node_step_getkeys() {
+    let runner = NodeRunner { tokens: vec!(
+        NodeToken::GetKeys,
+    )};
+    assert_eq!("'foo', 'bar', 'baz', 'qux'", test_vec4().node_step(runner));
+}
+
+#[test]
+fn node_step_help() {
     let mut context_vec = test_vec3();
     let runner = NodeRunner { tokens: vec!(NodeToken::Help) };
     let output = r#"
