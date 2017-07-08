@@ -399,6 +399,7 @@ Keyed Context Vector Help
 Commands:
 *   help               - display this help
 *   get                - display JSON
+*   getkeys            - display keys
 *   set                - set to JSON
 *   insert $KEY        - create a new element at the end of the vector with $KEY
 *   insert $INDEX $KEY - create a new element at $INDEX with $KEY

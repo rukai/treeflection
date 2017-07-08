@@ -168,8 +168,8 @@ Map Help
 
 Commands:
 *   help    - display this help
-*   keys    - display the keys
 *   get     - display JSON
+*   getkeys - display keys
 *   set     - set to JSON
 *   insert  - create a new element
 *   remove  - remove an element
