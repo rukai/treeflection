@@ -117,7 +117,7 @@ impl<T> Node for HashMap<String, T> where T: Node + Serialize + DeserializeOwned
                 let mut combined = String::from("|");
                 let mut pairs: Vec<_> = self.iter_mut().collect();
                 pairs.sort_by_key(|x| x.0);
-                for (_, mut item) in pairs {
+                for (_, item) in pairs {
                     combined.push_str(item.node_step(runner.clone()).as_ref());
                     combined.push('|');
                 }

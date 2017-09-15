@@ -1,5 +1,3 @@
-#![feature(drop_types_in_const)]
-
 #[macro_use] extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;

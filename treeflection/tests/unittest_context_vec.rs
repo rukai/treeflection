@@ -1,6 +1,5 @@
 extern crate treeflection;
 #[macro_use] extern crate matches;
-extern crate serde;
 
 use treeflection::{Node, NodeRunner, NodeToken, ContextVec};
 
