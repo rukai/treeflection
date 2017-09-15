@@ -36,7 +36,7 @@ impl Child {
     }
 
     fn function_name(&mut self, value: String) {
-        self.qux += value.parse().unwrap();
+        self.qux += value.parse::<i32>().unwrap();
     }
 
     fn same_name(&self) -> String {
