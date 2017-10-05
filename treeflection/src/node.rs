@@ -408,11 +408,15 @@ macro_rules! int_node {
 Valid values: {}
 
 Commands:
-*   help  - display this help
-*   copy  - copy this value
-*   paste - paste the copied value here
-*   get   - display value
-*   set   - set to value"#,
+*   help             - display this help
+*   copy             - copy this value
+*   paste            - paste the copied value here
+*   get              - display value
+*   set      $NUMBER - set to $NUMBER
+*   add      $NUMBER - adds $NUMBER to this number
+*   subtract $NUMBER - subtracts $NUMBER from this number
+*   multiply $NUMBER - multiply this number with $NUMBER
+*   divide   $NUMBER - divide this number by $NUMBER"#,
                             stringify! { $e },
                             $valid_values
                         )
@@ -440,6 +444,190 @@ Commands:
                             }
                             NumStore::None => {
                                 String::from("A number has not been copied")
+                            }
+                        }
+                    }
+                    NodeToken::Custom (action, args) => {
+                        match action.as_ref() {
+                            "add" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse() {
+                                        *self = (*self).saturating_add(number);
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            "subtract" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse() {
+                                        *self = (*self).saturating_sub(number);
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            "multiply" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse() {
+                                        *self = (*self).saturating_mul(number);
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            "divide" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse() {
+                                        if let Some(number) = (*self).checked_div(number) {
+                                            *self = number;
+                                            String::from("")
+                                        } else {
+                                            format!("Invalid value for {} (needs to be: {}, excluding 0)", stringify! { $e }, $valid_values)
+                                        }
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {}, excluding 0)", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            _ => {
+                                format!("{} cannot '{}'", stringify! { $e }, action)
+                            }
+                        }
+                    }
+                    action => { format!("{} cannot '{:?}'", stringify! { $e }, action) }
+                }
+            }
+        }
+    }
+}
+
+macro_rules! float_node {
+    ($e:ty, $valid_values:tt) => {
+        impl Node for $e {
+            fn node_step(&mut self, mut runner: NodeRunner) -> String {
+                match runner.step() {
+                    NodeToken::Get => { (*self).to_string() }
+                    NodeToken::Set (value) => {
+                        match value.parse() {
+                            Ok (value) => {
+                                *self = value;
+                                String::from("")
+                            }
+                            Err(_) => {
+                                format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                            }
+                        }
+                    }
+                    NodeToken::Help => {
+                        format!(r#"
+{} Help
+
+Valid values: {}
+
+Commands:
+*   help             - display this help
+*   copy             - copy this value
+*   paste            - paste the copied value here
+*   get              - display value
+*   set      $NUMBER - set to $NUMBER
+*   add      $NUMBER - adds $NUMBER to this number
+*   subtract $NUMBER - subtracts $NUMBER from this number
+*   multiply $NUMBER - multiply this number with $NUMBER
+*   divide   $NUMBER - divide this number by $NUMBER"#,
+                            stringify! { $e },
+                            $valid_values
+                        )
+                    }
+                    NodeToken::CopyFrom => {
+                        let num_copy = match stringify! { $e } {
+                            "f32" | "f64" => NumStore::Float (*self as f64),
+                            _             => NumStore::Int   (*self as u64)
+                        };
+                        unsafe {
+                            NUM_COPY = num_copy;
+                        }
+                        String::from("")
+                    }
+                    NodeToken::PasteTo => {
+                        let num_copy = unsafe { NUM_COPY.clone() };
+                        match num_copy {
+                            NumStore::Int (value) => {
+                                *self = value as $e;
+                                String::from("")
+                            }
+                            NumStore::Float (value) => {
+                                *self = value as $e;
+                                String::from("")
+                            }
+                            NumStore::None => {
+                                String::from("A number has not been copied")
+                            }
+                        }
+                    }
+                    NodeToken::Custom (action, args) => {
+                        match action.as_ref() {
+                            "add" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse::<$e>() {
+                                        *self += number;
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            "subtract" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse::<$e>() {
+                                        *self -= number;
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            "multiply" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse::<$e>() {
+                                        *self *= number;
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            "divide" => {
+                                if let Some(arg0) = args.get(0) {
+                                    if let Ok(number) = arg0.parse::<$e>() {
+                                        *self /= number;
+                                        String::from("")
+                                    } else {
+                                        format!("Invalid value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                    }
+                                } else {
+                                    format!("No value for {} (needs to be: {})", stringify! { $e }, $valid_values)
+                                }
+                            }
+                            _ => {
+                                format!("{} cannot '{}'", stringify! { $e }, action)
                             }
                         }
                     }
@@ -471,5 +659,5 @@ int_node!(isize, "A number from –9,223,372,036,854,775,808 to 9,223,372,036,85
 int_node!(usize, "A number from 0 to 18,446,744,073,709,551,615");
 
 // TODO: Not sure how to best present possible values for the floats
-int_node!(f32, "A number with a decimal point");
-int_node!(f64, "A higher precision number with a decimal point");
+float_node!(f32, "A number with a decimal point");
+float_node!(f64, "A higher precision number with a decimal point");
