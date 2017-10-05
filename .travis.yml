@@ -1,0 +1,12 @@
+language: rust
+rust:
+  - nightly
+
+cache: cargo
+
+script:
+  - RUST_TEST_THREADS=1 cargo test
+
+branches:
+  only:
+    - master

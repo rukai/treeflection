@@ -1,4 +1,4 @@
-# Treeflection
+# Treeflection [![Build Status](https://travis-ci.org/rukai/treeflection.svg?branch=master)](https://travis-ci.org/rukai/treeflection)
 
 Treeflection runs a command stored as a string on a tree of structs, collections and primitive types.
 
