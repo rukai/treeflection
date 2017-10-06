@@ -1,5 +1,3 @@
-#![feature(drop_types_in_const)]
-
 extern crate treeflection;
 #[macro_use] extern crate treeflection_derive;
 #[macro_use] extern crate matches;

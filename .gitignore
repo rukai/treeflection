@@ -1,5 +1,3 @@
-treeflection/target
-treeflection/Cargo.lock
-treeflection_derive/target
-treeflection_derive/Cargo.lock
+target
+Cargo.lock
 treeflection_derive/test_gen_source/gen_source.rs
