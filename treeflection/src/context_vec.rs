@@ -299,7 +299,7 @@ Commands:
 *   insert $INDEX - create a new element at $INDEX
 *   remove        - remove the element at the end of the vector
 *   remove $INDEX - remove the element at $INDEX
-*   default       - reset to default values
+*   reset         - reset to empty vector
 
 Accessors:
 *   [INDEX] - access item at INDEX

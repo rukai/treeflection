@@ -405,7 +405,7 @@ Commands:
 *   remove             - remove the element
 *   remove $KEY        - remove the element with $KEY
 *   remove $INDEX      - remove the element at $INDEX
-*   default            - reset to default values
+*   reset              - reset to empty vector
 
 Accessors:
 *   [INDEX] - access item at INDEX

@@ -191,7 +191,7 @@ Commands:
 *   set     - set to JSON
 *   insert  - create a new element
 *   remove  - remove an element
-*   default - reset to empty vector
+*   reset   - reset to empty vector
 
 Accessors:
 *   [index] - access item at index
@@ -309,7 +309,7 @@ Commands:
 *   set     - set to JSON
 *   insert  - set to a value
 *   remove  - remove value
-*   default - remove value
+*   reset   - remove value
 
 Accessors:
 *   .value - the stored value number of items"#;

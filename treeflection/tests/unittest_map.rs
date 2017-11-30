@@ -177,7 +177,7 @@ Commands:
 *   set     - set to JSON
 *   insert  - create a new element
 *   remove  - remove an element
-*   default - reset to empty map
+*   reset   - reset to empty map
 
 Accessors:
 *   [key]   - access item at the string key
