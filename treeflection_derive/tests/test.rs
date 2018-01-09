@@ -262,11 +262,12 @@ Accessors:
 enum SomeEnum {
     Foo,
     Bar,
-    Baz {x: f32, y: f32},
+    Baz { x: f32, y: f32 },
     Qux (u8),
     Quux (i64, String, bool),
-    GenericInTuple (Vec<usize>),
-    GenericInStruct {generic: Vec<usize>},
+    GenericUnnamed (Vec<usize>),
+    GenericNamed { generic: Vec<usize> },
+    GenericInTupleUnnamed ((Vec<usize>, Vec<String>)),
 }
 
 impl Default for SomeEnum {
@@ -322,7 +323,7 @@ fn set_unit_enum() {
 
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!( NodeToken::Set(String::from("\"Aether\"")) )};
-    assert_eq!(some_enum.node_step(runner), "SomeEnum set Error: unknown variant `Aether`, expected one of `Foo`, `Bar`, `Baz`, `Qux`, `Quux`, `GenericInTuple`, `GenericInStruct` at line 1 column 8");
+    assert_eq!(some_enum.node_step(runner), "SomeEnum set Error: unknown variant `Aether`, expected one of `Foo`, `Bar`, `Baz`, `Qux`, `Quux`, `GenericUnnamed`, `GenericNamed`, `GenericInTupleUnnamed` at line 1 column 8");
     assert!(matches!(some_enum, SomeEnum::Foo));
 }
 
@@ -492,7 +493,7 @@ fn variant_enum() {
 
     let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Baz"))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
-    assert_eq!(format!("{:?}", some_enum), String::from("Baz { x: 0, y: 0 }"));
+    assert_eq!(format!("{:?}", some_enum), String::from("Baz { x: 0.0, y: 0.0 }"));
 
     let runner = NodeRunner { tokens: vec!(NodeToken::SetVariant(String::from("Qux"))) };
     assert_eq!(some_enum.node_step(runner), String::from(""));
@@ -554,8 +555,9 @@ Valid variants:
 *   Baz
 *   Qux
 *   Quux
-*   GenericInTuple
-*   GenericInStruct
+*   GenericUnnamed
+*   GenericNamed
+*   GenericInTupleUnnamed
 
 Accessors:
 Changes depending on which variant the enum is currently set to:
@@ -569,10 +571,12 @@ As Quux:
 *   [0] - i64
 *   [1] - String
 *   [2] - bool
-As GenericInTuple:
+As GenericUnnamed:
 *   [0] - Vec
-As GenericInStruct:
+As GenericNamed:
 *   .generic - Vec
+As GenericInTupleUnnamed:
+*   [0] - Tuple
 "#;
     let mut some_enum = SomeEnum::Foo;
     let runner = NodeRunner { tokens: vec!(NodeToken::Help) };

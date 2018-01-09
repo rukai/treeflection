@@ -1,26 +1,42 @@
 #![recursion_limit = "128"]
 #[macro_use] extern crate quote;
-
-extern crate syn;
-extern crate proc_macro;
-extern crate serde;
-extern crate serde_json;
+             extern crate syn;
+             extern crate proc_macro;
+             extern crate proc_macro2;
+             extern crate serde;
+             extern crate serde_json;
 
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 
-use syn::{Attribute, Body, Ident, Variant, VariantData, Visibility, Field, Ty, MetaItem, NestedMetaItem, Lit};
+use syn::{
+    Attribute,
+    Data,
+    DeriveInput,
+    Field,
+    Fields,
+    Ident,
+    Meta,
+    NestedMeta,
+    Type,
+    Variant,
+    Visibility,
+    Lit,
+};
+use syn::punctuated::{Iter, Punctuated};
+use syn::token::Comma;
 use quote::Tokens;
 
 #[proc_macro_derive(Node, attributes(NodeActions))]
 pub fn treeflection_derive(input: TokenStream) -> TokenStream {
-    let input = input.to_string();
-    let ast = syn::parse_derive_input(&input).unwrap();
+    let ast: DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let actions = attrs_to_actions(&ast.attrs);
 
-    let impl_for = match ast.body {
-        Body::Enum(ref data)   => gen_enum(name, data, &actions),
-        Body::Struct(ref data) => gen_struct(name, data, &actions)
+    let impl_for = match ast.data {
+        Data::Enum(ref data)   => gen_enum(name, &data.variants, &actions),
+        Data::Struct(ref data) => gen_struct(name, &data.fields, &actions),
+        _ => unimplemented!()
     };
     let copy_var = gen_copy_var(name);
 
@@ -29,7 +45,7 @@ pub fn treeflection_derive(input: TokenStream) -> TokenStream {
         #copy_var
     };
 
-    quote_tokens.to_string().parse().unwrap()
+    quote_tokens.into()
 }
 
 fn copy_var_name(name: &str) -> Ident {
@@ -46,7 +62,7 @@ fn gen_copy_var(name: &Ident) -> Tokens {
 }
 
 fn gen_get(name: &str) -> Tokens {
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         use serde_json;
         match serde_json::to_string_pretty(self) {
             Ok(result) => {
@@ -60,7 +76,7 @@ fn gen_get(name: &str) -> Tokens {
 }
 
 fn gen_set(name: &str) -> Tokens {
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         use serde_json;
         match serde_json::from_str(value.as_str()) {
             Ok(result) => {
@@ -76,7 +92,7 @@ fn gen_set(name: &str) -> Tokens {
 
 fn gen_copy(name: &str) -> Tokens {
     let var_name = copy_var_name(name);
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         let copy = Some(self.clone());
         unsafe {
             #var_name = copy;
@@ -87,7 +103,7 @@ fn gen_copy(name: &str) -> Tokens {
 
 fn gen_paste(name: &str) -> Tokens {
     let var_name = copy_var_name(name);
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         let paste = unsafe { #var_name.clone() };
         match paste {
             Some (value) => {
@@ -108,28 +124,28 @@ fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
         let function_name = Ident::from(action.function.as_ref());
         let mut args: Vec<Tokens> = vec!();
         for i in 0..action.args {
-            args.push(quote! { args[#i].clone() });
+            args.push(quote_spanned! { Span::call_site() => args[#i].clone() });
         }
 
         let function_call = if action.return_string {
-            quote! {
+            quote_spanned!{ Span::call_site() =>
                 self.#function_name(#( #args ),*)
             }
         } else {
-            quote! {
+            quote_spanned!{ Span::call_site() =>
                 self.#function_name(#( #args ),*);
                 String::new()
             }
         };
 
-        arms.push(quote! {
+        arms.push(quote_spanned!{ Span::call_site() =>
             #action_name => {
                 #function_call
             }
         });
     }
 
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         match action.as_str() {
             #( #arms )*
             a => format!("{} cannot '{}'", #name, a)
@@ -137,36 +153,36 @@ fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
     }
 }
 
-fn gen_enum(name: &Ident, data: &Vec<Variant>, actions: &[Action]) -> Tokens {
+fn gen_enum(name: &Ident, variants: &Punctuated<Variant, Comma>, actions: &[Action]) -> Tokens {
     let name_string = name.to_string();
 
-    let property_arm = gen_enum_property(&name, data);
-    let index_arm = gen_enum_index(&name, data);
+    let property_arm = gen_enum_property(&name, variants.iter());
+    let index_arm = gen_enum_index(&name, variants.iter());
     let get_arm = gen_get(&name_string);
     let set_arm = gen_set(&name_string);
     let copy_arm = gen_copy(&name_string);
     let paste_arm = gen_paste(&name_string);
-    let help_arm = gen_enum_help(&name_string, data, actions);
-    let variant_arm = gen_variant(&name, data);
+    let help_arm = gen_enum_help(&name_string, variants.iter(), actions);
+    let variant_arm = gen_variant(&name, variants.iter());
     let custom_arm = gen_custom_actions(&name_string, actions);
-    let default_arm = quote! {
-        *self = #name::default();
+    let default_arm = quote_spanned!{ Span::call_site() =>
+        *self = Default::default();
         String::new()
     };
 
     // this is required to avoid an unused variable warning from generated code
-    let index_name = if check_using_index(data) {
-        quote! { index }
+    let index_name = if check_using_index(variants.iter()) {
+        quote_spanned!{ Span::call_site() => index }
     } else {
-        quote! { _ }
+        quote_spanned!{ Span::call_site() => _ }
     };
     let args = if actions.iter().all(|x| x.args == 0) {
-        quote! { _ }
+        quote_spanned!{ Span::call_site() => _ }
     } else {
-        quote! { args }
+        quote_spanned!{ Span::call_site() => args }
     };
 
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         impl Node for #name {
             fn node_step(&mut self, mut runner: NodeRunner) -> String {
                 match runner.step() {
@@ -187,55 +203,52 @@ fn gen_enum(name: &Ident, data: &Vec<Variant>, actions: &[Action]) -> Tokens {
     }
 }
 
-fn check_using_index(data: &Vec<Variant>) -> bool {
-    for variant in data {
-        if let VariantData::Tuple (_) = variant.data {
+fn check_using_index(variants: Iter<Variant, Comma>) -> bool {
+    for variant in variants {
+        if let Fields::Unnamed (_) = variant.fields {
             return true;
         }
     }
     false
 }
 
-fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
+fn gen_variant(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
     let name_string = name.to_string();
     let mut variant_arms: Vec<Tokens> = vec!();
-    for variant in data {
+    for variant in variants {
         let variant_name = &variant.ident;
         let variant_name_string = variant_name.to_string();
-        variant_arms.push(match &variant.data {
-            &VariantData::Struct (ref fields) => {
+        variant_arms.push(match &variant.fields {
+            &Fields::Named (ref fields) => {
                 let mut field_values: Vec<Tokens> = vec!();
-                for field in fields {
+                for field in fields.named.iter() {
                     let field_name = field.ident.as_ref().unwrap();
-                    let ty = turbofish(&field.ty);
-                    field_values.push(quote! {
-                        #field_name : #ty::default()
+                    field_values.push(quote_spanned!{ Span::call_site() =>
+                        #field_name : Default::default()
                     });
                 }
-                quote! {
+                quote_spanned!{ Span::call_site() =>
                     #variant_name_string => {
                         *self = #name::#variant_name { #( #field_values ),* };
                         String::new()
                     }
                 }
             }
-            &VariantData::Tuple (ref fields) => {
-                let mut field_values: Vec<Tokens> = vec!();
-                for field in fields {
-                    let ty = turbofish(&field.ty);
-                    field_values.push(quote! {
-                        #ty::default()
-                    });
-                }
-                quote! {
+            &Fields::Unnamed (ref fields) => {
+                let field_values: Vec<_> = fields.unnamed.iter().map(|_|
+                    quote_spanned!{ Span::call_site() =>
+                        Default::default()
+                    }
+                ).collect();
+                quote_spanned!{ Span::call_site() =>
                     #variant_name_string => {
                         *self = #name::#variant_name ( #( #field_values ),* );
                         String::new()
                     }
                 }
             }
-            &VariantData::Unit => {
-                quote! {
+            &Fields::Unit => {
+                quote_spanned!{ Span::call_site() =>
                     #variant_name_string => {
                         *self = #name::#variant_name;
                         String::new()
@@ -245,7 +258,7 @@ fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
         });
     }
 
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         match variant.as_str() {
             #( #variant_arms )*
             variant => format!("{} does not have a variant '{}'", #name_string, variant)
@@ -253,36 +266,25 @@ fn gen_variant(name: &Ident, data: &Vec<Variant>) -> Tokens {
     }
 }
 
-/// If the passed type is generic then it becomes turbofished
-fn turbofish(ty: &Ty) -> Ty {
-    let mut ty_string = quote! { #ty }.to_string();
-
-    if let Some(i) = ty_string.find("<") {
-        ty_string.insert_str(i, "::");
-    }
-
-    syn::parse_type(&ty_string).unwrap()
-}
-
-fn gen_enum_property(name: &Ident, data: &Vec<Variant>) -> Tokens {
+fn gen_enum_property(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
     let mut enum_arms: Vec<Tokens> = vec!();
 
-    for variant in data {
+    for variant in variants {
         let variant_name = &variant.ident;
         let variant_name_string = &variant.ident.to_string();
-        enum_arms.push(match &variant.data {
-            &VariantData::Struct (ref fields) => {
+        enum_arms.push(match &variant.fields {
+            &Fields::Named(ref fields) => {
                 let mut field_names: Vec<Tokens> = vec!();
                 let mut property_arms: Vec<Tokens> = vec!();
-                for field in fields {
+                for field in fields.named.iter() {
                     let field_name = &field.ident;
                     let field_name_string = field_name.as_ref().unwrap().to_string();
-                    field_names.push(quote!{ ref mut #field_name });
+                    field_names.push(quote_spanned!{ Span::call_site() => ref mut #field_name });
 
-                    property_arms.push(quote!{ #field_name_string => { #field_name.node_step(runner) } });
+                    property_arms.push(quote_spanned!{ Span::call_site() => #field_name_string => { #field_name.node_step(runner) } });
                 }
 
-                quote! {
+                quote_spanned!{ Span::call_site() =>
                     &mut #name::#variant_name { #( #field_names ),* } => {
                         match property.as_str() {
                             #( #property_arms )*
@@ -291,60 +293,60 @@ fn gen_enum_property(name: &Ident, data: &Vec<Variant>) -> Tokens {
                     }
                 }
             }
-            &VariantData::Tuple (ref fields) => {
+            &Fields::Unnamed (ref fields) => {
                 let mut underscores: Vec<Tokens> = vec!();
-                for _ in fields {
-                    underscores.push(quote!{_});
+                for _ in fields.unnamed.iter() {
+                    underscores.push(quote_spanned!{ Span::call_site() => _});
                 }
 
-                quote! {
+                quote_spanned!{ Span::call_site() =>
                     &mut #name::#variant_name ( #( #underscores ),* ) => { format!("{} does not have a property '{}'", #variant_name_string, property) }
                 }
             }
-            &VariantData::Unit => {
-                quote! {
+            &Fields::Unit => {
+                quote_spanned!{ Span::call_site() =>
                     &mut #name::#variant_name => { format!("{} does not have a property '{}'", #variant_name_string, property) }
                 }
             }
         });
     }
 
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         match self {
             #( #enum_arms )*
         }
     }
 }
 
-fn gen_enum_index(name: &Ident, data: &Vec<Variant>) -> Tokens {
+fn gen_enum_index(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
     let mut enum_arms: Vec<Tokens> = vec!();
 
-    for variant in data {
+    for variant in variants {
         let variant_name = &variant.ident;
         let variant_name_string = &variant.ident.to_string();
-        enum_arms.push(match &variant.data {
-            &VariantData::Struct (ref fields) => {
+        enum_arms.push(match &variant.fields {
+            &Fields::Named (ref fields) => {
                 let mut name_pairs: Vec<Tokens> = vec!();
-                for field in fields {
+                for field in fields.named.iter() {
                     let field_name = &field.ident;
-                    name_pairs.push(quote!{ #field_name: _ });
+                    name_pairs.push(quote_spanned!{ Span::call_site() => #field_name: _ });
                 }
 
-                quote! {
+                quote_spanned!{ Span::call_site() =>
                     &mut #name::#variant_name { #( #name_pairs ),* } => { format!("Cannot index {}", #variant_name_string) }
                 }
             }
-            &VariantData::Tuple (ref fields) => {
+            &Fields::Unnamed (ref fields) => {
                 let mut tuple_names: Vec<Tokens> = vec!();
                 let mut index_arms: Vec<Tokens> = vec!();
-                for i in 0..fields.len() {
+                for i in 0..fields.unnamed.len() {
                     let tuple_name = Ident::from(format!("x{}", i));
-                    tuple_names.push(quote!{ ref mut #tuple_name });
+                    tuple_names.push(quote_spanned!{ Span::call_site() => ref mut #tuple_name });
                     index_arms.push(quote!{ #i => { #tuple_name.node_step(runner) } });
                 }
-                let highest_index = fields.len()-1;
+                let highest_index = fields.unnamed.len()-1;
 
-                quote! {
+                quote_spanned!{ Span::call_site() =>
                     &mut #name::#variant_name ( #( #tuple_names ),* ) => {
                         match index {
                             #( #index_arms ),*
@@ -353,75 +355,79 @@ fn gen_enum_index(name: &Ident, data: &Vec<Variant>) -> Tokens {
                     }
                 }
             }
-            &VariantData::Unit => {
-                quote! {
+            &Fields::Unit => {
+                quote_spanned!{ Span::call_site() =>
                     &mut #name::#variant_name => { format!("Cannot index {}", #variant_name_string) }
                 }
             }
         });
     }
 
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         match self {
             #( #enum_arms )*
         }
     }
 }
 
-fn gen_struct(name: &Ident, data: &VariantData, actions: &[Action]) -> Tokens {
+fn gen_struct(name: &Ident, data: &Fields, actions: &[Action]) -> Tokens {
     let name_string = name.to_string();
+    match data {
+        &Fields::Named(ref fields_named) => {
+            let property_arm = gen_struct_property(&name_string, fields_named.named.iter());
+            let get_arm = gen_get(&name_string);
+            let set_arm = gen_set(&name_string);
+            let copy_arm = gen_copy(&name_string);
+            let paste_arm = gen_paste(&name_string);
+            let help_arm = gen_struct_help(&name_string, fields_named.named.iter(), actions);
+            let custom_arm = gen_custom_actions(&name_string, actions);
+            let default_arm = quote_spanned!{ Span::call_site() =>
+                *self = Default::default();
+                String::new()
+            };
 
-    let property_arm = gen_struct_property(&name_string, data);
-    let get_arm = gen_get(&name_string);
-    let set_arm = gen_set(&name_string);
-    let copy_arm = gen_copy(&name_string);
-    let paste_arm = gen_paste(&name_string);
-    let help_arm = gen_struct_help(&name_string, data, actions);
-    let custom_arm = gen_custom_actions(&name_string, actions);
-    let default_arm = quote! {
-        *self = #name::default();
-        String::new()
-    };
+            // this is required to avoid an unused variable warning from generated code
+            let args = if actions.iter().all(|x| x.args == 0) {
+                quote_spanned!{ Span::call_site() => _ }
+            } else {
+                quote_spanned!{ Span::call_site() => args }
+            };
 
-    // this is required to avoid an unused variable warning from generated code
-    let args = if actions.iter().all(|x| x.args == 0) {
-        quote! { _ }
-    } else {
-        quote! { args }
-    };
-
-    quote! {
-        impl Node for #name {
-            fn node_step(&mut self, mut runner: NodeRunner) -> String {
-                match runner.step() {
-                    NodeToken::ChainProperty (property) => { #property_arm }
-                    NodeToken::Get                      => { #get_arm }
-                    NodeToken::Set (value)              => { #set_arm }
-                    NodeToken::CopyFrom                 => { #copy_arm }
-                    NodeToken::PasteTo                  => { #paste_arm }
-                    NodeToken::Help                     => { #help_arm }
-                    NodeToken::SetDefault               => { #default_arm }
-                    NodeToken::Custom (action, #args)   => { #custom_arm }
-                    action                              => { format!("{} cannot '{:?}'", #name_string, action) }
+            quote_spanned! { Span::call_site() =>
+                impl Node for #name {
+                    fn node_step(&mut self, mut runner: NodeRunner) -> String {
+                        match runner.step() {
+                            NodeToken::ChainProperty (property) => { #property_arm }
+                            NodeToken::Get                      => { #get_arm }
+                            NodeToken::Set (value)              => { #set_arm }
+                            NodeToken::CopyFrom                 => { #copy_arm }
+                            NodeToken::PasteTo                  => { #paste_arm }
+                            NodeToken::Help                     => { #help_arm }
+                            NodeToken::SetDefault               => { #default_arm }
+                            NodeToken::Custom (action, #args)   => { #custom_arm }
+                            action                              => { format!("{} cannot '{:?}'", #name_string, action) }
+                        }
+                    }
                 }
             }
         }
+        _ => unimplemented!()
     }
 }
 
-fn gen_struct_property(name: &str, data: &VariantData) -> Tokens {
+fn gen_struct_property(name: &str, fields: Iter<Field, Comma>) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
-    for field in data.fields() {
+    for field in fields {
         let field_name = &field.ident.as_ref().unwrap();
         let field_name_string = field_name.to_string();
-        if let Visibility::Public = field.vis {
-            arms.push(quote!{
+        if let Visibility::Public(_) = field.vis {
+            arms.push(quote_spanned!{ Span::call_site() =>
                 #field_name_string => { self.#field_name.node_step(runner) },
             });
         }
     }
 
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         match property.as_str() {
             #( #arms )*
             prop => format!("{} does not have a property '{}'", #name, prop)
@@ -429,7 +435,7 @@ fn gen_struct_property(name: &str, data: &VariantData) -> Tokens {
     }
 }
 
-fn gen_struct_help(name: &str, data: &VariantData, actions: &[Action]) -> Tokens {
+fn gen_struct_help(name: &str, fields: Iter<Field, Comma>, actions: &[Action]) -> Tokens {
     let mut output = format!(r#"
 {} Help
 
@@ -444,47 +450,44 @@ Actions:
 Accessors:
 "#, name, custom_action_help(actions));
 
-    for field in data.fields() {
-        if let Visibility::Public = field.vis {
+    for field in fields {
+        if let Visibility::Public(_) = field.vis {
             let field_name = &field.ident.as_ref().unwrap();
-            let field_type = get_field_type(field);
+            let field_type = type_string(&field.ty);
             output.push_str(format!("*   {} - {}\n", field_name, field_type).as_ref());
         }
     }
     output.pop();
 
-    quote!{
+    quote_spanned!{ Span::call_site() =>
         String::from(#output)
     }
 }
 
-fn gen_enum_help(name: &str, data: &Vec<Variant>, actions: &[Action]) -> Tokens {
+fn gen_enum_help(name: &str, variants: Iter<Variant, Comma>, actions: &[Action]) -> Tokens {
     let mut variant_list = String::new();
-    for variant in data {
-        let name = &variant.ident.as_ref();
-        variant_list.push_str(format!("*   {}\n", name).as_ref());
-    }
-
     let mut accessor_list = String::new();
-    for variant in data {
+
+    for variant in variants {
         let variant_name = &variant.ident.as_ref();
-        match &variant.data {
-            &VariantData::Struct (ref fields) => {
+        variant_list.push_str(format!("*   {}\n", variant_name).as_ref());
+        match &variant.fields {
+            &Fields::Named (ref fields) => {
                 accessor_list.push_str(format!("As {}:\n", variant_name).as_ref());
-                for field in fields {
+                for field in fields.named.iter() {
                     let field_name = field.ident.as_ref().unwrap().as_ref();
-                    let field_type = get_field_type(field);
+                    let field_type = type_string(&field.ty);
                     accessor_list.push_str(format!("*   .{} - {}\n", field_name, field_type).as_ref());
                 }
             }
-            &VariantData::Tuple (ref fields) => {
+            &Fields::Unnamed (ref fields) => {
                 accessor_list.push_str(format!("As {}:\n", variant_name).as_ref());
-                for (i, field) in fields.iter().enumerate() {
-                    let field_type = get_field_type(field);
+                for (i, field) in fields.unnamed.iter().enumerate() {
+                    let field_type = type_string(&field.ty);
                     accessor_list.push_str(format!("*   [{}] - {}\n", i, field_type).as_ref());
                 }
             }
-            &VariantData::Unit => { }
+            &Fields::Unit => { }
         }
     }
 
@@ -513,7 +516,7 @@ Valid variants:
 {}
 {}"#, name, custom_actions, variant_list, accessor_info, accessor_list);
 
-    quote!{
+    quote_spanned!{ Span::call_site() =>
         String::from(#output)
     }
 }
@@ -531,23 +534,23 @@ fn custom_action_help(actions: &[Action]) -> String {
     result
 }
 
-fn get_field_type(field: &Field) -> &str {
-    if let Ty::Path (_, ref path) = field.ty {
-        // TODO: Do I want the first or last segment?
-        for segment in &path.segments {
-            return segment.ident.as_ref();
+fn type_string(ty: &Type) -> String {
+    match ty {
+        &Type::Path (ref path) => {
+            String::from(path.path.segments[0].ident.as_ref())
         }
+        &Type::Tuple (_) => String::from("Tuple"),
+        _ => String::from("UNABLE TO GET TYPE")
     }
-    "UNABLE TO GET TYPE"
 }
 
 fn attrs_to_actions(attrs: &[Attribute]) -> Vec<Action> {
     let mut actions: Vec<Action> = vec!();
     for attr in attrs {
-        if let &MetaItem::List (ref ident, ref nest_metas) = &attr.value {
-            if ident == "NodeActions" {
-                for nest_meta in nest_metas {
-                    if let &NestedMetaItem::MetaItem (ref sub_attr) = nest_meta {
+        if let Some(Meta::List (list)) = attr.interpret_meta() {
+            if list.ident == "NodeActions" {
+                for nest_meta in list.nested.iter() {
+                    if let &NestedMeta::Meta (ref sub_attr) = nest_meta {
                         actions.push(attr_to_action(sub_attr));
                     }
                     else {
@@ -560,41 +563,41 @@ fn attrs_to_actions(attrs: &[Attribute]) -> Vec<Action> {
     actions
 }
 
-fn attr_to_action(attr: &MetaItem) -> Action {
-    if let &MetaItem::List (ref ident, ref sub_attrs) = attr {
-        if ident == "NodeAction" {
+fn attr_to_action(attr: &Meta) -> Action {
+    if let &Meta::List (ref list) = attr {
+        if list.ident == "NodeAction" {
             let mut action: Option<String> = None;
             let mut function: Option<String> = None;
             let mut args: usize = 0;
             let mut return_string = false;
             let mut help: Option<String> = None;
-            for sub_attr in sub_attrs {
-                if let &NestedMetaItem::MetaItem (ref sub_attr) = sub_attr {
-                    match sub_attr {
-                        &MetaItem::Word (ref ident) => {
+            for nest_meta in list.nested.iter() {
+                if let &NestedMeta::Meta (ref meta) = nest_meta {
+                    match meta {
+                        &Meta::Word (ref ident) => {
                             if ident == "return_string" {
                                 return_string = true;
                             } else {
                                 panic!("Invalid NodeAction attribute: Invalid value in list");
                             }
                         }
-                        &MetaItem::NameValue (ref ident, ref literal) => {
-                            match ident.as_ref() {
+                        &Meta::NameValue (ref name_value) => {
+                            match name_value.ident.as_ref() {
                                 "action" => {
-                                    if let &Lit::Str(ref value, _) = literal { action = Some(value.clone()) }
+                                    if let &Lit::Str(ref lit) = &name_value.lit { action = Some(lit.value()) }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for action value"); }
                                 }
                                 "function" => {
-                                    if let &Lit::Str(ref value, _) = literal { function = Some(value.clone()) }
+                                    if let &Lit::Str(ref lit) = &name_value.lit { function = Some(lit.value()) }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for function value"); }
                                 }
                                 "help" => {
-                                    if let &Lit::Str(ref value, _) = literal { help = Some(value.clone()) }
+                                    if let &Lit::Str(ref lit) = &name_value.lit { help = Some(lit.value()) }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for help value"); }
                                 }
                                 "args" => {
-                                    if let &Lit::Str(ref value, _) = literal {
-                                        args = value.parse::<usize>().expect("Invalid NodeAction attribute: Expected a string that can parse into usize");
+                                    if let &Lit::Str(ref lit) = &name_value.lit {
+                                        args = lit.value().parse::<usize>().expect("Invalid NodeAction attribute: Expected a string that can parse into usize");
                                     }
                                     else {
                                         panic!("Invalid NodeAction attribute: Expected a string for args value");
@@ -603,7 +606,7 @@ fn attr_to_action(attr: &MetaItem) -> Action {
                                 _ => { panic!("Invalid NodeAction attribute: Invalid value in list"); }
                             }
                         }
-                        &MetaItem::List (_, _) => {
+                        &Meta::List (_) => {
                             panic!("Invalid NodeAction attribute: Invalid value in list");
                         }
                     }
@@ -616,11 +619,11 @@ fn attr_to_action(attr: &MetaItem) -> Action {
             let function = function.expect("Invalid NodeAction attribute: Needs to specify a function");
 
             Action {
-                action:       action.unwrap_or(function.clone()),
-                function:     function,
-                args:         args,
+                action:        action.unwrap_or(function.clone()),
+                function:      function,
+                args:          args,
                 return_string: return_string,
-                help:         help,
+                help:          help,
             }
         }
         else {
@@ -631,7 +634,6 @@ fn attr_to_action(attr: &MetaItem) -> Action {
         panic!("Invalid NodeAction attribute: Needs to be a list")
     }
 }
-
 
 struct Action {
     pub action:       String,
