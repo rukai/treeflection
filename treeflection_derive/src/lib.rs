@@ -16,14 +16,16 @@ use syn::{
     Field,
     Fields,
     Ident,
+    Lit,
+    LitStr,
     Meta,
     NestedMeta,
     Type,
     Variant,
     Visibility,
-    Lit,
 };
 use syn::punctuated::{Iter, Punctuated};
+use syn::spanned::Spanned;
 use syn::token::Comma;
 use quote::Tokens;
 
@@ -40,9 +42,11 @@ pub fn treeflection_derive(input: TokenStream) -> TokenStream {
     };
     let copy_var = gen_copy_var(name);
 
-    let quote_tokens = quote! {
-        #impl_for
-        #copy_var
+    let quote_tokens = quote!{
+        // mod { TODO: Add a mod here as per the heapsize2 syn example, can't figure out why it isnt working though.
+            #impl_for
+            #copy_var
+        // }
     };
 
     quote_tokens.into()
@@ -56,7 +60,7 @@ fn copy_var_name(name: &str) -> Ident {
 
 fn gen_copy_var(name: &Ident) -> Tokens {
     let var_name = copy_var_name(name.as_ref());
-    quote! {
+    quote_spanned!{ Span::call_site() =>
         static mut #var_name: Option<#name> = None;
     }
 }
@@ -121,26 +125,27 @@ fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for action in actions {
         let action_name = &action.action;
-        let function_name = Ident::from(action.function.as_ref());
+        let span = action.function.span().resolved_at(Span::def_site());
+        let function_name = Ident::from(action.function.value().as_ref());
         let mut args: Vec<Tokens> = vec!();
         for i in 0..action.args {
             args.push(quote_spanned! { Span::call_site() => args[#i].clone() });
         }
 
         let function_call = if action.return_string {
-            quote_spanned!{ Span::call_site() =>
-                self.#function_name(#( #args ),*)
+            quote_spanned!{ span =>
+                #function_name(#( #args ),*)
             }
         } else {
-            quote_spanned!{ Span::call_site() =>
-                self.#function_name(#( #args ),*);
+            quote_spanned!{ span =>
+                #function_name(#( #args ),*);
                 String::new()
             }
         };
 
         arms.push(quote_spanned!{ Span::call_site() =>
             #action_name => {
-                #function_call
+                self.#function_call
             }
         });
     }
@@ -279,9 +284,11 @@ fn gen_enum_property(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
                 for field in fields.named.iter() {
                     let field_name = &field.ident;
                     let field_name_string = field_name.as_ref().unwrap().to_string();
+                    let span = field.span().resolved_at(Span::def_site());
                     field_names.push(quote_spanned!{ Span::call_site() => ref mut #field_name });
+                    let runner = quote_spanned!{ Span::call_site() => runner };
 
-                    property_arms.push(quote_spanned!{ Span::call_site() => #field_name_string => { #field_name.node_step(runner) } });
+                    property_arms.push(quote_spanned!{ span => #field_name_string => { #field_name.node_step(#runner) } });
                 }
 
                 quote_spanned!{ Span::call_site() =>
@@ -339,10 +346,12 @@ fn gen_enum_index(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
             &Fields::Unnamed (ref fields) => {
                 let mut tuple_names: Vec<Tokens> = vec!();
                 let mut index_arms: Vec<Tokens> = vec!();
-                for i in 0..fields.unnamed.len() {
+                for (i, field) in fields.unnamed.iter().enumerate() {
                     let tuple_name = Ident::from(format!("x{}", i));
                     tuple_names.push(quote_spanned!{ Span::call_site() => ref mut #tuple_name });
-                    index_arms.push(quote!{ #i => { #tuple_name.node_step(runner) } });
+                    let span = field.span().resolved_at(Span::def_site());
+                    let runner = quote_spanned!{ Span::call_site() => runner };
+                    index_arms.push(quote_spanned!{ span => #i => { #tuple_name.node_step(#runner) } });
                 }
                 let highest_index = fields.unnamed.len()-1;
 
@@ -418,11 +427,16 @@ fn gen_struct(name: &Ident, data: &Fields, actions: &[Action]) -> Tokens {
 fn gen_struct_property(name: &str, fields: Iter<Field, Comma>) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for field in fields {
-        let field_name = &field.ident.as_ref().unwrap();
-        let field_name_string = field_name.to_string();
         if let Visibility::Public(_) = field.vis {
+            let field_name = &field.ident.as_ref().unwrap();
+            let field_name_string = field_name.to_string();
+            let span = field.span().resolved_at(Span::def_site());
+            let runner = quote_spanned!{ Span::call_site() => runner };
+            let step = quote_spanned!{ span =>
+                #field_name.node_step(#runner)
+            };
             arms.push(quote_spanned!{ Span::call_site() =>
-                #field_name_string => { self.#field_name.node_step(runner) },
+                #field_name_string => { self.#step }
             });
         }
     }
@@ -525,9 +539,9 @@ fn custom_action_help(actions: &[Action]) -> String {
     let mut result = String::new();
     for action in actions {
         let action_string = if let &Some(ref help) = &action.help {
-            format!("*   {} - {}\n", action.action, help)
+            format!("*   {} - {}\n", action.action.value(), help)
         } else {
-            format!("*   {}\n", action.action)
+            format!("*   {}\n", action.action.value())
         };
         result.push_str(action_string.as_ref());
     }
@@ -566,8 +580,8 @@ fn attrs_to_actions(attrs: &[Attribute]) -> Vec<Action> {
 fn attr_to_action(attr: &Meta) -> Action {
     if let &Meta::List (ref list) = attr {
         if list.ident == "NodeAction" {
-            let mut action: Option<String> = None;
-            let mut function: Option<String> = None;
+            let mut action: Option<LitStr> = None;
+            let mut function: Option<LitStr> = None;
             let mut args: usize = 0;
             let mut return_string = false;
             let mut help: Option<String> = None;
@@ -584,11 +598,11 @@ fn attr_to_action(attr: &Meta) -> Action {
                         &Meta::NameValue (ref name_value) => {
                             match name_value.ident.as_ref() {
                                 "action" => {
-                                    if let &Lit::Str(ref lit) = &name_value.lit { action = Some(lit.value()) }
+                                    if let &Lit::Str(ref lit) = &name_value.lit { action = Some(lit.clone());  }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for action value"); }
                                 }
                                 "function" => {
-                                    if let &Lit::Str(ref lit) = &name_value.lit { function = Some(lit.value()) }
+                                    if let &Lit::Str(ref lit) = &name_value.lit { function = Some(lit.clone()) }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for function value"); }
                                 }
                                 "help" => {
@@ -636,9 +650,9 @@ fn attr_to_action(attr: &Meta) -> Action {
 }
 
 struct Action {
-    pub action:       String,
-    pub function:     String,
-    pub args:         usize,
+    pub action:        LitStr,
+    pub function:      LitStr,
+    pub args:          usize,
     pub return_string: bool,
-    pub help:         Option<String>,
+    pub help:          Option<String>,
 }

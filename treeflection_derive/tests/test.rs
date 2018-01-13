@@ -33,11 +33,11 @@ impl Child {
         }
     }
 
-    fn function_name(&mut self, value: String) {
+    pub fn function_name(&mut self, value: String) {
         self.qux += value.parse::<i32>().unwrap();
     }
 
-    fn same_name(&self) -> String {
+    pub fn same_name(&self) -> String {
         String::from("basic action")
     }
 }
