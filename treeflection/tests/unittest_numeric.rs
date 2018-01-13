@@ -77,7 +77,8 @@ fn int_get() {
 }
 
 #[test]
-fn copy_from_int() {
+fn copy_from_numeric() {
+    // int
     let copy_token = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
     let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
 
@@ -97,10 +98,8 @@ fn copy_from_int() {
     assert_eq!(c, 250);
     assert_eq!(e.node_step(paste_token.clone()), "");
     assert_eq!(e, 250.0);
-}
 
-#[test]
-fn copy_from_float() {
+    // float
     let copy_token = NodeRunner { tokens: vec!(NodeToken::CopyFrom) };
     let paste_token = NodeRunner { tokens: vec!(NodeToken::PasteTo) };
 

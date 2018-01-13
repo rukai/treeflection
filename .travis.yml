@@ -5,7 +5,8 @@ rust:
 cache: cargo
 
 script:
-  - RUST_TEST_THREADS=1 cargo test
+  - cargo test
+  - cargo test --release
 
 branches:
   only:
