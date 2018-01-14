@@ -1,6 +1,6 @@
 [package]
 name = "treeflection_derive"
-version = "0.1.16"
+version = "0.2.0"
 authors = ["Rukai <rubickent@gmail.com>"]
 description = "#[derive(Node)] macro for the Treeflection library"
 license = "MIT"
@@ -19,5 +19,5 @@ proc-macro2 = { version = "0.2", features = ["nightly"] }
 
 [dev-dependencies]
 matches = "0.1"
-treeflection = { path = "../treeflection" }
+treeflection = { path = "../treeflection", version = "0.1" }
 serde_derive = "1.0"
