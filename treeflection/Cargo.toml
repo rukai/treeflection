@@ -8,9 +8,9 @@ repository = "https://github.com/rukai/treeflection"
 keywords = ["reflection", "tree", "treeflection"]
 
 [dependencies]
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = "1.0"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
 itertools = "0.7"
 
 [dev-dependencies]
