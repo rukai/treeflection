@@ -125,7 +125,7 @@ fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for action in actions {
         let action_name = &action.action;
-        let span = action.function.span().resolved_at(Span::def_site());
+        let span = action.function.span();
         let function_name = Ident::from(action.function.value().as_ref());
         let mut args: Vec<Tokens> = vec!();
         for i in 0..action.args {
@@ -208,7 +208,7 @@ fn gen_enum(name: &Ident, variants: &Punctuated<Variant, Comma>, actions: &[Acti
     }
 }
 
-fn check_using_index(variants: Iter<Variant, Comma>) -> bool {
+fn check_using_index(variants: Iter<Variant>) -> bool {
     for variant in variants {
         if let Fields::Unnamed (_) = variant.fields {
             return true;
@@ -217,7 +217,7 @@ fn check_using_index(variants: Iter<Variant, Comma>) -> bool {
     false
 }
 
-fn gen_variant(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
+fn gen_variant(name: &Ident, variants: Iter<Variant>) -> Tokens {
     let name_string = name.to_string();
     let mut variant_arms: Vec<Tokens> = vec!();
     for variant in variants {
@@ -271,7 +271,7 @@ fn gen_variant(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
     }
 }
 
-fn gen_enum_property(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
+fn gen_enum_property(name: &Ident, variants: Iter<Variant>) -> Tokens {
     let mut enum_arms: Vec<Tokens> = vec!();
 
     for variant in variants {
@@ -284,7 +284,7 @@ fn gen_enum_property(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
                 for field in fields.named.iter() {
                     let field_name = &field.ident;
                     let field_name_string = field_name.as_ref().unwrap().to_string();
-                    let span = field.span().resolved_at(Span::def_site());
+                    let span = field.span();
                     field_names.push(quote_spanned!{ Span::call_site() => ref mut #field_name });
                     let runner = quote_spanned!{ Span::call_site() => runner };
 
@@ -325,7 +325,7 @@ fn gen_enum_property(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
     }
 }
 
-fn gen_enum_index(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
+fn gen_enum_index(name: &Ident, variants: Iter<Variant>) -> Tokens {
     let mut enum_arms: Vec<Tokens> = vec!();
 
     for variant in variants {
@@ -349,9 +349,8 @@ fn gen_enum_index(name: &Ident, variants: Iter<Variant, Comma>) -> Tokens {
                 for (i, field) in fields.unnamed.iter().enumerate() {
                     let tuple_name = Ident::from(format!("x{}", i));
                     tuple_names.push(quote_spanned!{ Span::call_site() => ref mut #tuple_name });
-                    let span = field.span().resolved_at(Span::def_site());
                     let runner = quote_spanned!{ Span::call_site() => runner };
-                    index_arms.push(quote_spanned!{ span => #i => { #tuple_name.node_step(#runner) } });
+                    index_arms.push(quote_spanned!{ field.span() => #i => { #tuple_name.node_step(#runner) } });
                 }
                 let highest_index = fields.unnamed.len()-1;
 
@@ -424,15 +423,14 @@ fn gen_struct(name: &Ident, data: &Fields, actions: &[Action]) -> Tokens {
     }
 }
 
-fn gen_struct_property(name: &str, fields: Iter<Field, Comma>) -> Tokens {
+fn gen_struct_property(name: &str, fields: Iter<Field>) -> Tokens {
     let mut arms: Vec<Tokens> = vec!();
     for field in fields {
         if let Visibility::Public(_) = field.vis {
             let field_name = &field.ident.as_ref().unwrap();
             let field_name_string = field_name.to_string();
-            let span = field.span().resolved_at(Span::def_site());
             let runner = quote_spanned!{ Span::call_site() => runner };
-            let step = quote_spanned!{ span =>
+            let step = quote_spanned!{ field.span() =>
                 #field_name.node_step(#runner)
             };
             arms.push(quote_spanned!{ Span::call_site() =>
@@ -449,7 +447,7 @@ fn gen_struct_property(name: &str, fields: Iter<Field, Comma>) -> Tokens {
     }
 }
 
-fn gen_struct_help(name: &str, fields: Iter<Field, Comma>, actions: &[Action]) -> Tokens {
+fn gen_struct_help(name: &str, fields: Iter<Field>, actions: &[Action]) -> Tokens {
     let mut output = format!(r#"
 {} Help
 
@@ -478,7 +476,7 @@ Accessors:
     }
 }
 
-fn gen_enum_help(name: &str, variants: Iter<Variant, Comma>, actions: &[Action]) -> Tokens {
+fn gen_enum_help(name: &str, variants: Iter<Variant>, actions: &[Action]) -> Tokens {
     let mut variant_list = String::new();
     let mut accessor_list = String::new();
 
