@@ -6,8 +6,7 @@
              extern crate serde;
              extern crate serde_json;
 
-use proc_macro::TokenStream;
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 
 use syn::{
     Attribute,
@@ -27,10 +26,9 @@ use syn::{
 use syn::punctuated::{Iter, Punctuated};
 use syn::spanned::Spanned;
 use syn::token::Comma;
-use quote::Tokens;
 
 #[proc_macro_derive(Node, attributes(NodeActions))]
-pub fn treeflection_derive(input: TokenStream) -> TokenStream {
+pub fn treeflection_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast: DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let actions = attrs_to_actions(&ast.attrs);
@@ -43,10 +41,8 @@ pub fn treeflection_derive(input: TokenStream) -> TokenStream {
     let copy_var = gen_copy_var(name);
 
     let quote_tokens = quote!{
-        // mod { TODO: Add a mod here as per the heapsize2 syn example, can't figure out why it isnt working though.
-            #impl_for
-            #copy_var
-        // }
+        #impl_for
+        #copy_var
     };
 
     quote_tokens.into()
@@ -55,17 +51,17 @@ pub fn treeflection_derive(input: TokenStream) -> TokenStream {
 fn copy_var_name(name: &str) -> Ident {
     let mut var_name = name.to_uppercase();
     var_name.push_str("_COPY");
-    Ident::from(var_name)
+    Ident::new(&var_name, Span::call_site())
 }
 
-fn gen_copy_var(name: &Ident) -> Tokens {
-    let var_name = copy_var_name(name.as_ref());
+fn gen_copy_var(name: &Ident) -> TokenStream {
+    let var_name = copy_var_name(&name.to_string());
     quote_spanned!{ Span::call_site() =>
         static mut #var_name: Option<#name> = None;
     }
 }
 
-fn gen_get(name: &str) -> Tokens {
+fn gen_get(name: &str) -> TokenStream {
     quote_spanned!{ Span::call_site() =>
         use serde_json;
         match serde_json::to_string_pretty(self) {
@@ -79,7 +75,7 @@ fn gen_get(name: &str) -> Tokens {
     }
 }
 
-fn gen_set(name: &str) -> Tokens {
+fn gen_set(name: &str) -> TokenStream {
     quote_spanned!{ Span::call_site() =>
         use serde_json;
         match serde_json::from_str(value.as_str()) {
@@ -94,7 +90,7 @@ fn gen_set(name: &str) -> Tokens {
     }
 }
 
-fn gen_copy(name: &str) -> Tokens {
+fn gen_copy(name: &str) -> TokenStream {
     let var_name = copy_var_name(name);
     quote_spanned!{ Span::call_site() =>
         let copy = Some(self.clone());
@@ -105,7 +101,7 @@ fn gen_copy(name: &str) -> Tokens {
     }
 }
 
-fn gen_paste(name: &str) -> Tokens {
+fn gen_paste(name: &str) -> TokenStream {
     let var_name = copy_var_name(name);
     quote_spanned!{ Span::call_site() =>
         let paste = unsafe { #var_name.clone() };
@@ -121,13 +117,13 @@ fn gen_paste(name: &str) -> Tokens {
     }
 }
 
-fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
-    let mut arms: Vec<Tokens> = vec!();
+fn gen_custom_actions(name: &str, actions: &[Action]) -> TokenStream {
+    let mut arms: Vec<TokenStream> = vec!();
     for action in actions {
         let action_name = &action.action;
         let span = action.function.span();
-        let function_name = Ident::from(action.function.value().as_ref());
-        let mut args: Vec<Tokens> = vec!();
+        let function_name = Ident::new(action.function.value().as_ref(), span);
+        let mut args: Vec<TokenStream> = vec!();
         for i in 0..action.args {
             args.push(quote_spanned! { Span::call_site() => args[#i].clone() });
         }
@@ -158,7 +154,7 @@ fn gen_custom_actions(name: &str, actions: &[Action]) -> Tokens {
     }
 }
 
-fn gen_enum(name: &Ident, variants: &Punctuated<Variant, Comma>, actions: &[Action]) -> Tokens {
+fn gen_enum(name: &Ident, variants: &Punctuated<Variant, Comma>, actions: &[Action]) -> TokenStream {
     let name_string = name.to_string();
 
     let property_arm = gen_enum_property(&name, variants.iter());
@@ -217,15 +213,15 @@ fn check_using_index(variants: Iter<Variant>) -> bool {
     false
 }
 
-fn gen_variant(name: &Ident, variants: Iter<Variant>) -> Tokens {
+fn gen_variant(name: &Ident, variants: Iter<Variant>) -> TokenStream {
     let name_string = name.to_string();
-    let mut variant_arms: Vec<Tokens> = vec!();
+    let mut variant_arms: Vec<TokenStream> = vec!();
     for variant in variants {
         let variant_name = &variant.ident;
         let variant_name_string = variant_name.to_string();
         variant_arms.push(match &variant.fields {
             &Fields::Named (ref fields) => {
-                let mut field_values: Vec<Tokens> = vec!();
+                let mut field_values: Vec<TokenStream> = vec!();
                 for field in fields.named.iter() {
                     let field_name = field.ident.as_ref().unwrap();
                     field_values.push(quote_spanned!{ Span::call_site() =>
@@ -271,16 +267,16 @@ fn gen_variant(name: &Ident, variants: Iter<Variant>) -> Tokens {
     }
 }
 
-fn gen_enum_property(name: &Ident, variants: Iter<Variant>) -> Tokens {
-    let mut enum_arms: Vec<Tokens> = vec!();
+fn gen_enum_property(name: &Ident, variants: Iter<Variant>) -> TokenStream {
+    let mut enum_arms: Vec<TokenStream> = vec!();
 
     for variant in variants {
         let variant_name = &variant.ident;
         let variant_name_string = &variant.ident.to_string();
         enum_arms.push(match &variant.fields {
             &Fields::Named(ref fields) => {
-                let mut field_names: Vec<Tokens> = vec!();
-                let mut property_arms: Vec<Tokens> = vec!();
+                let mut field_names: Vec<TokenStream> = vec!();
+                let mut property_arms: Vec<TokenStream> = vec!();
                 for field in fields.named.iter() {
                     let field_name = &field.ident;
                     let field_name_string = field_name.as_ref().unwrap().to_string();
@@ -301,7 +297,7 @@ fn gen_enum_property(name: &Ident, variants: Iter<Variant>) -> Tokens {
                 }
             }
             &Fields::Unnamed (ref fields) => {
-                let mut underscores: Vec<Tokens> = vec!();
+                let mut underscores: Vec<TokenStream> = vec!();
                 for _ in fields.unnamed.iter() {
                     underscores.push(quote_spanned!{ Span::call_site() => _});
                 }
@@ -325,15 +321,15 @@ fn gen_enum_property(name: &Ident, variants: Iter<Variant>) -> Tokens {
     }
 }
 
-fn gen_enum_index(name: &Ident, variants: Iter<Variant>) -> Tokens {
-    let mut enum_arms: Vec<Tokens> = vec!();
+fn gen_enum_index(name: &Ident, variants: Iter<Variant>) -> TokenStream {
+    let mut enum_arms: Vec<TokenStream> = vec!();
 
     for variant in variants {
         let variant_name = &variant.ident;
         let variant_name_string = &variant.ident.to_string();
         enum_arms.push(match &variant.fields {
             &Fields::Named (ref fields) => {
-                let mut name_pairs: Vec<Tokens> = vec!();
+                let mut name_pairs: Vec<TokenStream> = vec!();
                 for field in fields.named.iter() {
                     let field_name = &field.ident;
                     name_pairs.push(quote_spanned!{ Span::call_site() => #field_name: _ });
@@ -344,10 +340,10 @@ fn gen_enum_index(name: &Ident, variants: Iter<Variant>) -> Tokens {
                 }
             }
             &Fields::Unnamed (ref fields) => {
-                let mut tuple_names: Vec<Tokens> = vec!();
-                let mut index_arms: Vec<Tokens> = vec!();
+                let mut tuple_names: Vec<TokenStream> = vec!();
+                let mut index_arms: Vec<TokenStream> = vec!();
                 for (i, field) in fields.unnamed.iter().enumerate() {
-                    let tuple_name = Ident::from(format!("x{}", i));
+                    let tuple_name = Ident::new(&format!("x{}", i), Span::call_site());
                     tuple_names.push(quote_spanned!{ Span::call_site() => ref mut #tuple_name });
                     let runner = quote_spanned!{ Span::call_site() => runner };
                     index_arms.push(quote_spanned!{ field.span() => #i => { #tuple_name.node_step(#runner) } });
@@ -378,7 +374,7 @@ fn gen_enum_index(name: &Ident, variants: Iter<Variant>) -> Tokens {
     }
 }
 
-fn gen_struct(name: &Ident, data: &Fields, actions: &[Action]) -> Tokens {
+fn gen_struct(name: &Ident, data: &Fields, actions: &[Action]) -> TokenStream {
     let name_string = name.to_string();
     match data {
         &Fields::Named(ref fields_named) => {
@@ -423,8 +419,8 @@ fn gen_struct(name: &Ident, data: &Fields, actions: &[Action]) -> Tokens {
     }
 }
 
-fn gen_struct_property(name: &str, fields: Iter<Field>) -> Tokens {
-    let mut arms: Vec<Tokens> = vec!();
+fn gen_struct_property(name: &str, fields: Iter<Field>) -> TokenStream {
+    let mut arms: Vec<TokenStream> = vec!();
     for field in fields {
         if let Visibility::Public(_) = field.vis {
             let field_name = &field.ident.as_ref().unwrap();
@@ -447,7 +443,7 @@ fn gen_struct_property(name: &str, fields: Iter<Field>) -> Tokens {
     }
 }
 
-fn gen_struct_help(name: &str, fields: Iter<Field>, actions: &[Action]) -> Tokens {
+fn gen_struct_help(name: &str, fields: Iter<Field>, actions: &[Action]) -> TokenStream {
     let mut output = format!(r#"
 {} Help
 
@@ -476,18 +472,18 @@ Accessors:
     }
 }
 
-fn gen_enum_help(name: &str, variants: Iter<Variant>, actions: &[Action]) -> Tokens {
+fn gen_enum_help(name: &str, variants: Iter<Variant>, actions: &[Action]) -> TokenStream {
     let mut variant_list = String::new();
     let mut accessor_list = String::new();
 
     for variant in variants {
-        let variant_name = &variant.ident.as_ref();
+        let variant_name = &variant.ident.to_string();
         variant_list.push_str(format!("*   {}\n", variant_name).as_ref());
         match &variant.fields {
             &Fields::Named (ref fields) => {
                 accessor_list.push_str(format!("As {}:\n", variant_name).as_ref());
                 for field in fields.named.iter() {
-                    let field_name = field.ident.as_ref().unwrap().as_ref();
+                    let field_name = field.ident.as_ref().unwrap().to_string();
                     let field_type = type_string(&field.ty);
                     accessor_list.push_str(format!("*   .{} - {}\n", field_name, field_type).as_ref());
                 }
@@ -549,7 +545,7 @@ fn custom_action_help(actions: &[Action]) -> String {
 fn type_string(ty: &Type) -> String {
     match ty {
         &Type::Path (ref path) => {
-            String::from(path.path.segments[0].ident.as_ref())
+            String::from(path.path.segments[0].ident.to_string())
         }
         &Type::Tuple (_) => String::from("Tuple"),
         _ => String::from("UNABLE TO GET TYPE")
@@ -594,9 +590,9 @@ fn attr_to_action(attr: &Meta) -> Action {
                             }
                         }
                         &Meta::NameValue (ref name_value) => {
-                            match name_value.ident.as_ref() {
+                            match name_value.ident.to_string().as_ref() {
                                 "action" => {
-                                    if let &Lit::Str(ref lit) = &name_value.lit { action = Some(lit.clone());  }
+                                    if let &Lit::Str(ref lit) = &name_value.lit { action = Some(lit.clone()); }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for action value"); }
                                 }
                                 "function" => {
