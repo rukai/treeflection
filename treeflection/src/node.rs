@@ -4,8 +4,8 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json;
 
-use ::node_runner::NodeRunner;
-use ::node_token::NodeToken;
+use crate::node_runner::NodeRunner;
+use crate::node_token::NodeToken;
 
 pub trait Node {
     fn node_step(&mut self, runner: NodeRunner) -> String;

@@ -1,4 +1,4 @@
-use ::node_token::NodeToken;
+use crate::node_token::NodeToken;
 use std::slice::Iter;
 
 #[derive(Clone)]
