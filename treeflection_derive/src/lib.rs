@@ -1,10 +1,6 @@
 #![recursion_limit = "128"]
 #[macro_use] extern crate quote;
-             extern crate syn;
              extern crate proc_macro;
-             extern crate proc_macro2;
-             extern crate serde;
-             extern crate serde_json;
 
 use proc_macro2::{Span, TokenStream};
 
