@@ -551,8 +551,8 @@ fn type_string(ty: &Type) -> String {
 fn attrs_to_actions(attrs: &[Attribute]) -> Vec<Action> {
     let mut actions: Vec<Action> = vec!();
     for attr in attrs {
-        if let Some(Meta::List (list)) = attr.interpret_meta() {
-            if list.ident == "NodeActions" {
+        if let Ok(Meta::List (list)) = attr.parse_meta() {
+            if list.path.is_ident("NodeActions") {
                 for nest_meta in list.nested.iter() {
                     if let &NestedMeta::Meta (ref sub_attr) = nest_meta {
                         actions.push(attr_to_action(sub_attr));
@@ -569,7 +569,7 @@ fn attrs_to_actions(attrs: &[Attribute]) -> Vec<Action> {
 
 fn attr_to_action(attr: &Meta) -> Action {
     if let &Meta::List (ref list) = attr {
-        if list.ident == "NodeAction" {
+        if list.path.is_ident("NodeAction") {
             let mut action: Option<LitStr> = None;
             let mut function: Option<LitStr> = None;
             let mut args: usize = 0;
@@ -578,28 +578,29 @@ fn attr_to_action(attr: &Meta) -> Action {
             for nest_meta in list.nested.iter() {
                 if let &NestedMeta::Meta (ref meta) = nest_meta {
                     match meta {
-                        &Meta::Word (ref ident) => {
-                            if ident == "return_string" {
+                        &Meta::Path (ref path) => {
+                            if path.is_ident("return_string") {
                                 return_string = true;
                             } else {
                                 panic!("Invalid NodeAction attribute: Invalid value in list");
                             }
                         }
                         &Meta::NameValue (ref name_value) => {
-                            match name_value.ident.to_string().as_ref() {
-                                "action" => {
+                            let ident_string = name_value.path.segments.first().map(|x| x.ident.to_string());
+                            match ident_string.as_ref().map(|x| x.as_ref()) {
+                                Some("action") => {
                                     if let &Lit::Str(ref lit) = &name_value.lit { action = Some(lit.clone()); }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for action value"); }
                                 }
-                                "function" => {
+                                Some("function") => {
                                     if let &Lit::Str(ref lit) = &name_value.lit { function = Some(lit.clone()) }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for function value"); }
                                 }
-                                "help" => {
+                                Some("help") => {
                                     if let &Lit::Str(ref lit) = &name_value.lit { help = Some(lit.value()) }
                                     else { panic!("Invalid NodeAction attribute: Expected a string for help value"); }
                                 }
-                                "args" => {
+                                Some("args") => {
                                     if let &Lit::Str(ref lit) = &name_value.lit {
                                         args = lit.value().parse::<usize>().expect("Invalid NodeAction attribute: Expected a string that can parse into usize");
                                     }

@@ -12,11 +12,11 @@ keywords = ["reflection", "tree", "treeflection"]
 proc-macro = true
 
 [dependencies]
-syn = "0.15"
-quote = "0.6"
+syn = "1"
+quote = "1"
 serde = "1"
 serde_json = "1"
-proc-macro2 = { version = "0.4", features = ["nightly"] }
+proc-macro2 = "1"
 
 [dev-dependencies]
 matches = "0.1"
