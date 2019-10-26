@@ -220,7 +220,7 @@ fn tuple_chain_index() {
         NodeToken::Get,
         NodeToken::ChainIndex(2),
     )};
-    assert_eq!(test_tuple().node_step(runner), "Used index 2 on a ( T0 , T1 , )");
+    assert_eq!(test_tuple().node_step(runner), "Used index 2 on a (T0, T1,)");
 }
 
 #[test]
@@ -276,7 +276,7 @@ fn tuple_set() {
 fn tuple_set_fail() {
     let mut some_tuple = test_tuple();
     let runner = NodeRunner { tokens: vec!(NodeToken::Set(String::from("[1, 2]"))) };
-    assert_eq!(some_tuple.node_step(runner), String::from("( T0 , T1 , ) set error: invalid type: integer `2`, expected a boolean at line 1 column 5"));
+    assert_eq!(some_tuple.node_step(runner), String::from("(T0, T1,) set error: invalid type: integer `2`, expected a boolean at line 1 column 5"));
     assert_eq!(some_tuple.0, 42);
     assert_eq!(some_tuple.1, true);
 }
@@ -312,7 +312,7 @@ Commands:
 *   reset   - remove value
 
 Accessors:
-*   .value - the stored value number of items"#;
+*   .value - the stored value"#;
 
     let mut some_option: Option<usize> = None;
     let runner = NodeRunner { tokens: vec!(NodeToken::Help) };

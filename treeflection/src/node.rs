@@ -377,7 +377,7 @@ Commands:
 *   reset   - remove value
 
 Accessors:
-*   .value - the stored value number of items"#)
+*   .value - the stored value"#)
             }
             action => { format!("Option cannot '{:?}'", action) }
         }
