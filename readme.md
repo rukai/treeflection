@@ -1,4 +1,5 @@
-# Treeflection [![Build Status](https://travis-ci.org/rukai/treeflection.svg?branch=master)](https://travis-ci.org/rukai/treeflection) [![dependency status](https://deps.rs/repo/github/rukai/treeflection/status.svg)](https://deps.rs/repo/github/rukai/treeflection)
+# Treeflection [![Build Status](https://travis-ci.org/rukai/treeflection.svg?branch=master)](https://travis-ci.org/rukai/treeflection) [![dependency status](https://deps.rs/repo/github/rukai/treeflection/status.svg)](https://deps.rs/repo/github/rukai/treeflection) [![Crates.io](https://img.shields.io/crates/v/treeflection.svg)](https://crates.io/crates/treeflection) [![Docs](https://docs.rs/treeflection/badge.svg)](https://docs.rs/treeflection)
+## treeflection_derive [![Crates.io](https://img.shields.io/crates/v/treeflection_derive.svg)](https://crates.io/crates/treeflection_derive) [![Docs](https://docs.rs/treeflection_derive/badge.svg)](https://docs.rs/treeflection_derive)
 
 Treeflection runs a command stored as a string on a tree of structs, collections and primitive types.
 
