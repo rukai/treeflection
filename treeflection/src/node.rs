@@ -262,6 +262,79 @@ tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 
 tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11, 12 T12, 13 T13, 14 T14);
 tuple_node!(0 T0, 1 T1, 2 T2, 3 T3, 4 T4, 5 T5, 6 T6, 7 T7, 8 T8, 9 T9, 10 T10, 11 T11, 12 T12, 13 T13, 14 T14, 15 T15);
 
+macro_rules! array_node {
+    ( $length:expr ) => {
+        impl<T> Node for [T; $length] where T: Node + Serialize + DeserializeOwned {
+            fn node_step(&mut self, mut runner: NodeRunner) -> String {
+                let length = stringify!{ $length };
+                match runner.step() {
+                    NodeToken::ChainIndex (index) => {
+                        #[allow(unused_comparisons)] // comparison becomes useless on array of size 0
+                        if index < $length {
+                            self[index].node_step(runner)
+                        } else {
+                            format!("Used index {} on an array of length {}", index, length)
+                        }
+                    }
+                    NodeToken::ChainAll => {
+                        let mut combined = String::from("|");
+                        for i in 0..$length {
+                            combined.push_str(self[i].node_step(runner.clone()).as_ref());
+                            combined.push('|');
+                        }
+                        combined
+                    }
+                    NodeToken::Get => {
+                        serde_json::to_string_pretty(self).unwrap()
+                    }
+                    NodeToken::Set (value) => {
+                        match serde_json::from_str(&value) {
+                            Ok (result) => {
+                                *self = result;
+                                String::from("")
+                            }
+                            Err (err) => {
+                                format!("array set error: {}", err)
+                            }
+                        }
+                    }
+                    NodeToken::Help => {
+                        String::from(r#"
+Array Help
+
+Commands:
+*   help - display this help
+*   get  - display JSON
+*   set  - set to JSON
+
+Accessors:
+*   [index] - access item at index"#)
+                    }
+                    action => { format!("array cannot '{:?}'", action) }
+                }
+            }
+        }
+    }
+}
+
+array_node!(0);
+array_node!(1);
+array_node!(2);
+array_node!(3);
+array_node!(4);
+array_node!(5);
+array_node!(6);
+array_node!(7);
+array_node!(8);
+array_node!(9);
+array_node!(10);
+array_node!(11);
+array_node!(12);
+array_node!(13);
+array_node!(14);
+array_node!(15);
+array_node!(16);
+
 impl Node for bool {
     fn node_step(&mut self, mut runner: NodeRunner) -> String {
         match runner.step() {
