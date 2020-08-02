@@ -145,5 +145,5 @@ r#"{
 
 ## Contributing
 
-This library is designed around the specific needs of [PF Sandbox](https://github.com/rukai/PF_Sandbox).
-Pull requests are welcome but if the changes go against the needs of PF Sandbox you will be stuck with your own fork. :)
+This library is designed around the specific needs of [Canon Collision](https://github.com/rukai/canon_collision).
+Pull requests are welcome but if the changes go against the needs of Canon Collision you will be stuck with your own fork. :)

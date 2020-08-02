@@ -1,6 +1,5 @@
 #![recursion_limit = "128"]
 #[macro_use] extern crate quote;
-             extern crate proc_macro;
 
 use proc_macro2::{Span, TokenStream};
 

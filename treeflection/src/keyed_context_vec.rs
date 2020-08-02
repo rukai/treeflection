@@ -222,7 +222,7 @@ impl<T> KeyedContextVec<T> {
         element
     }
 
-    /// Retrieve the index corresponding to the given key
+    /// Retrieve the index corresponding to the given key.
     /// This operation is O(n)
     pub fn key_to_value(&self, key_search: &str) -> Option<&T> {
         for (value, key_current) in self.vector.iter().zip(&self.keys) {
@@ -233,7 +233,7 @@ impl<T> KeyedContextVec<T> {
         None
     }
 
-    /// Retrieve the index corresponding to the given key
+    /// Retrieve the index corresponding to the given key.
     /// This operation is O(n)
     pub fn key_to_value_mut(&mut self, key_search: &str) -> Option<&mut T> {
         for (value, key_current) in self.vector.iter_mut().zip(&self.keys) {
@@ -249,7 +249,7 @@ impl<T> KeyedContextVec<T> {
         self.keys.get(i).map(|x| x.clone())
     }
 
-    /// Retrieve the index corresponding to the given key
+    /// Retrieve the index corresponding to the given key.
     /// This operation is O(n)
     pub fn key_to_index(&self, key_search: &str) -> Option<usize> {
         for (i, key_current) in self.keys.iter().enumerate() {
