@@ -14,7 +14,7 @@ use crate::node_token::NodeToken;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct KeyedContextVec<T> {
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     context: Vec<usize>,
     vector:  Vec<T>,
     keys:    Vec<String>,
