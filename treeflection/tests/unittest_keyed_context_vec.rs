@@ -684,31 +684,31 @@ fn node_step_remove_key() {
     let mut some_vec = test_vec4();
 
     assert_eq!(some_vec.len(), 4);
-    assert_eq!(some_vec[0], 100000);
-    assert_eq!(some_vec[1], 13);
-    assert_eq!(some_vec[2], -358);
-    assert_eq!(some_vec[3], 42);
+    assert_eq!(some_vec[0], 100000); // foo
+    assert_eq!(some_vec[1], 13); // bar
+    assert_eq!(some_vec[2], -358); // baz
+    assert_eq!(some_vec[3], 42); // qux
 
     let runner = NodeRunner { tokens: vec!(NodeToken::RemoveKey(String::from("boo"))) };
     assert_eq!(some_vec.node_step(runner), "Tried to remove the value with key 'boo' on a keyed context vector that doesnt contain it. Current keys: 'foo', 'bar', 'baz', 'qux'");
     assert_eq!(some_vec.len(), 4);
-    assert_eq!(some_vec[0], 100000);
-    assert_eq!(some_vec[1], 13);
-    assert_eq!(some_vec[2], -358);
-    assert_eq!(some_vec[3], 42);
+    assert_eq!(some_vec[0], 100000); // foo
+    assert_eq!(some_vec[1], 13); // bar
+    assert_eq!(some_vec[2], -358); // baz
+    assert_eq!(some_vec[3], 42); // qux
 
     let runner = NodeRunner { tokens: vec!(NodeToken::RemoveKey(String::from("foo"))) };
     assert_eq!("", some_vec.node_step(runner));
     assert_eq!(some_vec.len(), 3);
-    assert_eq!(some_vec[0], 13);
-    assert_eq!(some_vec[1], -358);
-    assert_eq!(some_vec[2], 42);
+    assert_eq!(some_vec[0], 13); // bar
+    assert_eq!(some_vec[1], -358); // baz
+    assert_eq!(some_vec[2], 42); // qux
 
     let runner = NodeRunner { tokens: vec!(NodeToken::RemoveKey(String::from("baz"))) };
     assert_eq!("", some_vec.node_step(runner));
     assert_eq!(some_vec.len(), 2);
-    assert_eq!(some_vec[0], 13);
-    assert_eq!(some_vec[1], -358);
+    assert_eq!(some_vec[0], 13); // bar
+    assert_eq!(some_vec[1], 42); // baz
 }
 
 #[test]

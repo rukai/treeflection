@@ -204,11 +204,13 @@ impl<T> KeyedContextVec<T> {
         }
     }
 
-    /// Remove a value at the specified index.
+    /// Remove a value and its key at the specified index.
     /// Deletes any context indices pointing to the removed value.
     /// Shifts all larger context indices down.
+    /// Returns the value.
     pub fn remove(&mut self, to_remove: usize) -> T {
         let element = self.vector.remove(to_remove);
+        self.keys.remove(to_remove);
         let mut new_context: Vec<usize> = vec!();
         for i in self.context.drain(..) {
             if i < to_remove {
@@ -220,6 +222,18 @@ impl<T> KeyedContextVec<T> {
         }
         self.context = new_context;
         element
+    }
+
+    /// Remove a value and its key at the specified key.
+    /// Deletes any context indices pointing to the removed value.
+    /// Shifts all larger context indices down.
+    /// Returns the value if the key exists otherwise returns None
+    pub fn remove_by_key(&mut self, key: &str) -> Option<T> {
+        if let Some(to_remove) = self.key_to_index(key) {
+            Some(self.remove(to_remove))
+        } else {
+            None
+        }
     }
 
     /// Retrieve the index corresponding to the given key.
@@ -512,8 +526,7 @@ impl<T> Node for KeyedContextVec<T> where T: Node + Serialize + DeserializeOwned
                 }
             }
             NodeToken::RemoveKey (key) => {
-                if let Some(index) = self.key_to_index(&key) {
-                    self.remove(index);
+                if let Some(_) = self.remove_by_key(&key) {
                     String::new()
                 } else {
                     format!("Tried to remove the value with key '{}' on a keyed context vector that doesnt contain it. Current keys: {}", key, self.format_keys())
